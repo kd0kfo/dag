@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import dag, dag_utils
+import dag
+import dag.util as dag_utils
 
 def print_help():
     from sys import argv

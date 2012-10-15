@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import dag,dag_utils
+import dag
+import dag.util as dag_utils
 
 def create_dag(input_filename, parsers):
     """
@@ -21,7 +22,7 @@ def create_dag(input_filename, parsers):
     init_file = dag_utils.open_user_init()
 
     if not init_file:
-        raise dag_utils.DagException("Could not open init file. File not found.")
+        raise dag.DagException("Could not open init file. File not found.")
 
     exec(compile(init_file.read(), init_file.name, 'exec'))
 
@@ -81,7 +82,7 @@ def gsub(input,start_jobs = True):
 
     root_dag = create_dag(input,parsers)
     if root_dag is None:
-        raise dag_utils.DagException("Could not create DAG using submission file %s" % input)
+        raise dag.DagException("Could not create DAG using submission file %s" % input)
 
     save_dag(root_dag,dagfile)
     if not start_jobs:
