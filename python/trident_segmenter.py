@@ -1,0 +1,108 @@
+import dag
+
+# Defaults
+segment_fmt = "segmented-%s"
+default_fpops_est = 6E12
+default_chunk_size = 1500
+    
+
+class TridentInstance:
+    def __init__(self, mirna, dna, args):
+        self.mirna = mirna
+        self.dna = dna
+        self.args = args
+
+    def create_job_xml(self):
+        import os.path as OP
+        dna_basename = OP.basename(self.dna)
+        mirna_basename = OP.basename(self.mirna)
+        jobfile = dag.File(dna_basename + '_' + mirna_basename + "-job.xml","job.xml",temporary_file=True)
+        with open(jobfile.physical_name,"w") as file:
+            file.write("""
+<job_desc>
+    <task>
+        <application>trident</application>
+        <stdout_filename>{0}_{2}.stdout</stdout_filename> 
+        <stderr_filename>{0}_{2}.stderr</stderr_filename> 
+        <command_line> {2} {3} {1} </command_line> 
+    </task>
+</job_desc>
+""".format(dna_basename,self.args,mirna_basename, dna_basename))
+        return jobfile
+
+    def get_dag_node(self):
+        import re
+        from Bio import SeqIO
+
+        # Estimate compute time based on mirna count
+        fpops_est = 0
+        for i in SeqIO.parse(self.mirna,"fasta"):
+            fpops_est += default_fpops_est
+        
+        input = [dag.File(self.mirna),dag.File(self.dna)]
+        for infile in input:
+            if "segmented" in infile.physical_name:
+                infile.temp_file = True
+        output = []
+        if self.args:
+            match = re.findall("-out\s*(\S*)",self.args)
+            if match:
+                output.append(dag.File(match[0],max_nbytes=250e6))
+        input.append(self.create_job_xml())
+        return dag.Process("trident",input,output,arguments = self.args,rsc_fpops_est = fpops_est,rsc_fpops_bound = fpops_est*5)
+
+
+def parse(args):
+    import os.path as OP
+    import getopt
+    from trident import chromosome_chopper as chopper
+
+    if len(args) < 2:
+        print("trident processes require at least two filenames")
+        return None
+
+    mirna = args[0]
+    dna = args[1]
+
+    print("Running trident with miRNA %s and DNA %s" % (mirna, dna))
+    if len(args) > 2:
+        print ("with flags %s" % " ".join(args[2:]))
+
+    num_files = 1
+    if OP.isfile(dna):
+        num_files = chopper.chopper(dna,segment_fmt % dna,default_chunk_size)
+
+    # sanity check chopper. No need to chop the sequence into one segment file
+    if num_files == 1:
+        chopped_file = (segment_fmt + "-1") % dna
+        if OP.isfile(chopped_file):
+            OP.os.unlink(chopped_file)
+    else:
+        print("Created %d dna files" % num_files)
+
+    retval = []
+
+    strargs = " ".join(args[2:])
+
+    have_output = ("-out" in args[2:])
+    
+    if num_files == 1:
+        # in case the dna did not need to be segmented
+        proc = TridentInstance(mirna,dna,strargs)
+        if not have_output:
+            proc.args += " -out %s.out" % dna
+        retval.append(proc.get_dag_node())
+    else:
+        for i in list(range(1,num_files+1)):
+            #iterate through segments and setup work units
+            # for the sake of running on a grid, an output file is required.
+            segment_name = (segment_fmt + "-%s") % (dna,i)
+            proc = TridentInstance(mirna,segment_name,strargs)
+            if not have_output:
+                proc.args += " -out %s.out" % segment_name
+            retval.append(proc.get_dag_node())
+    
+        
+    return retval
+
+    
