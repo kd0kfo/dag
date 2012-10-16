@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import dag
-import dag.util as dag_utils
+import boinctools
 
 def print_help():
     from sys import argv
@@ -47,36 +47,36 @@ def update_dag(cmd, cmd_args):
             proc = root_dag.get_process(wuname)
             if cmd == "remove":
                 print("Removing %s" % wuname)
-                dag_utils.remove_workunit(root_dag,proc)
+                boinctools.remove_workunit(root_dag,proc)
             if cmd in ["run","stage"]:
                 print("Staging %s" % wuname)
-                dag_utils.stage_files(proc)
+                boinctools.stage_files(proc)
                 if proc.state == dag.States.CREATED:
                     proc.state = dag.States.STAGED
                 if cmd == "run":
                     print("Starting %s" % wuname)
                     if root_dag.incomplete_prereqs(proc):
                         raise Exception("Cannot start %s. Missing dependencies.")
-                    dag_utils.schedule_work(proc,dagfile)
+                    boinctools.schedule_work(proc,dagfile)
                     proc.state = dag.States.RUNNING
 
             #save dag
             root_dag.save(dagfile)
     elif cmd == "start":
-        dag_utils.create_work(root_dag,OP.abspath(dagfile))
+        boinctools.create_work(root_dag,OP.abspath(dagfile))
         root_dag.save(dagfile)
     elif cmd == "recreate":
         if not cmd_args:
             raise Exception("recreate requires a specific file type to recreate.")
         if cmd_args[0] == "result_template":
             proc = root_dag.get_process(cmd_args[1])
-            dag_utils.create_result_template(proc,proc.result_template.full_path())
+            boinctools.create_result_template(proc,proc.result_template.full_path())
             print("Created result template")
         else:
             print("Do not know how to recreate: '%s'" % cmd_args[0])
     elif cmd == "cancel":
         proc_list = [root_dag.get_process(wuname) for wuname in cmd_args]
-        dag_utils.cancel_workunits(proc_list)
+        boinctools.cancel_workunits(proc_list)
         root_dag.save()
     else:
         raise Exception("Unknown command: %s" % cmd)
