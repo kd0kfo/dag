@@ -12,7 +12,7 @@ def create_dag(input_filename, parsers):
     Arguments:
     input_filename -- String filename to be parsed into a DAG
     parsers -- Dictionary that maps string command names to functions that
-    \tare used to create DAG.
+    are used to create DAG.
     
     Returns: dag.DAG object if successful. Otherwise, None is returned
     """
@@ -60,13 +60,15 @@ def gsub(input,start_jobs = True):
     into workunits to be run on the grid. if start_jobs is true,
     workunites that are ready to be run are submitted to the scheduler.
 
-    Arguments:
-    \tinput -- String filename of commands to be parsed
-    \tstart_jobs -- Boolean indicating whether jobs should be started
-    \t\tif they are ready (Default: True).
+    @type input: String
+    @param input: filename of commands to be parsed
+    
+    @type start_jobs: Boolean
+    @param start_jobs: Indicates whether jobs should be started if they are ready (Default: True).
     """
     import os
     from os import path as OP
+    import boinctools
 
     def save_dag(the_dag, fn):
         import stat
@@ -90,7 +92,7 @@ def gsub(input,start_jobs = True):
     
     abs_dag_path = OP.abspath(dagfile)
     try:
-        dag_utils.create_work(root_dag,abs_dag_path)
+        boinctools.create_work(root_dag,abs_dag_path)
     except Exception as e:
         import traceback
         print("Exception thrown creating work")

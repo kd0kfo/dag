@@ -62,7 +62,7 @@ class File:
         Removes the file based on the physical_name.
 
         Returns: Boolean indicating whether or not the file
-        \tcould be removed. Note: Exceptions are not caught.
+        could be removed. Note: Exceptions are not caught.
         """
         import os.path as OP
         if OP.isfile(self.physical_name):
@@ -182,24 +182,31 @@ DAG is a directed acyclic graph. It stores a list of processes (nodes in the gra
         import os.path as OP
         import lockfile
 
-        # Open file
         file = None
-        if filename == None:
+
+        # Check filename.
+        # * If filename is None *and* self.filename is None,
+        #   use a temporary file
+        # * If filename is not None and if filename is not equal
+        #   to self.filename, we are changing self.filename.
+        if not filename:
             if not self.filename:
                 file = tempfile.NamedTemporaryFile(mode='wb',delete=False,dir=os.getcwd())
-        if file == None:
-            try:
-                file = open(self.filename,"wb")
-            except Exception as e:
-                print("Saving DAG failed.")
-                print("CWD: %s" % os.getcwd())
-
-        lock = lockfile.FileLock(file.name)
+        elif (self.filename != filename):
+            self.filename = filename
+                
+        lock = lockfile.FileLock(self.filename)
 
         try:
             lock.acquire(timeout=10)
         except lockfile.LockTimeout:
             raise DagException("Error saving DAG. DAG file %s is locked.")
+
+        if file == None:
+            try:
+                file = open(self.filename,"wb")
+            except Exception as e:
+                raise DagException("Saving DAG failed.\nCWD: %s" % os.getcwd())
 
         self.filename = OP.abspath(file.name) # Update filename
 
