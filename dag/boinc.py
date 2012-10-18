@@ -122,16 +122,15 @@ def stage_data(proc,source_dir = None, set_grp_perms = True, overwrite = True):
     """
     Marshals input files to the grid server
 
-    Arguments: proc -- dag.Process to be staged
-    \tsource_dir -- String directory of the input files that are relative
-    \t\tfilenames (Optional. Default: None)
-    \tset_grp_perms -- Boolean indicator as to whether or not the group
-    \t\tshould be given write access to the destination files. (Optional.
-    \t\tDefault: True)
-    \toverwrite -- Boolean indicator as to whether or not the destination files
-    \t\tshould be overwritten. (Optional. Default: True)
-    No Return value
-    Raises dag.DagException if the file copy fails
+    @param proc: Process to be staged
+    @type proc: dag.Process
+    @type source_dir: String
+    @param source_dir: String directory of the input files that are relative filenames (Default: None)
+    @param set_grp_perms: Boolean
+    @type set_grp_perms: Indicator as to whether or not the group should be given write access to the destination files. (Default: True)
+    @type overwrite: Boolean
+    @param overwrite: indicator as to whether or not the destination files should be overwritten. (Default: True)
+    @raise dag.DagException: if the file copy fails
     """
 
     import boinctools

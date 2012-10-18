@@ -7,7 +7,7 @@ def print_help():
     from sys import argv
     print("Usage: %s <cmd> [args]" % argv[0])
 
-def update_dag(cmd, cmd_args):
+def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
     """
     This is the main forking function that operates on a DAG and its workunits
 
@@ -20,9 +20,7 @@ def update_dag(cmd, cmd_args):
     """
     from os import path as OP
     import dag
-
-    dagfile = "jobs.dag"
-
+    
     if not OP.isfile(dagfile):
         raise Exception("Could not open '%s'" % dagfile)
         
