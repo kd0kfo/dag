@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import dag
+import dag,dag.boinc
 import boinctools
 
 def print_help():
@@ -19,7 +19,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
     Raises Exception if the DAG file is missing or if the command is unknown.
     """
     from os import path as OP
-    import dag
+    import dag,dag.boinc
     
     if not OP.isfile(dagfile):
         raise Exception("Could not open '%s'" % dagfile)
@@ -45,36 +45,36 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
             proc = root_dag.get_process(wuname)
             if cmd == "remove":
                 print("Removing %s" % wuname)
-                boinctools.remove_workunit(root_dag,proc)
+                dag.boinc.remove_workunit(root_dag,proc)
             if cmd in ["run","stage"]:
                 print("Staging %s" % wuname)
-                boinctools.stage_files(proc)
+                dag.boinc.stage_files(proc)
                 if proc.state == dag.States.CREATED:
                     proc.state = dag.States.STAGED
                 if cmd == "run":
                     print("Starting %s" % wuname)
                     if root_dag.incomplete_prereqs(proc):
                         raise Exception("Cannot start %s. Missing dependencies.")
-                    boinctools.schedule_work(proc,dagfile)
+                    dag.boinc.schedule_work(proc,dagfile)
                     proc.state = dag.States.RUNNING
 
             #save dag
             root_dag.save(dagfile)
     elif cmd == "start":
-        boinctools.create_work(root_dag,OP.abspath(dagfile))
+        dag.boinc.create_work(root_dag,OP.abspath(dagfile))
         root_dag.save(dagfile)
     elif cmd == "recreate":
         if not cmd_args:
             raise Exception("recreate requires a specific file type to recreate.")
         if cmd_args[0] == "result_template":
             proc = root_dag.get_process(cmd_args[1])
-            boinctools.create_result_template(proc,proc.result_template.full_path())
+            dag.boinc.create_result_template(proc,proc.result_template.full_path())
             print("Created result template")
         else:
             print("Do not know how to recreate: '%s'" % cmd_args[0])
     elif cmd == "cancel":
         proc_list = [root_dag.get_process(wuname) for wuname in cmd_args]
-        boinctools.cancel_workunits(proc_list)
+        dag.boinc.cancel_workunits(proc_list)
         root_dag.save()
     else:
         raise Exception("Unknown command: %s" % cmd)

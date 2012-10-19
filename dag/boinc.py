@@ -4,6 +4,8 @@ dag.boinc
 Interface module to boinctools. This allows processes in a DAG to interpret and use BOINC data.
 """
 
+import boinctools
+
 def unique_input_name(proc, file):
     """
     Creates a unique file name for input files associated with a work unit.
@@ -31,7 +33,7 @@ def create_workunit_template(proc):
     import tempfile
     import os,os.path
     
-    tmpl_path = os.path.join(project_path,"templates")
+    tmpl_path = os.path.join(boinctools.project_path,"templates")
     with tempfile.NamedTemporaryFile(mode='w',delete=False,dir=tmpl_path) as file:
         file.write("""
 <input_template>""")
@@ -80,7 +82,7 @@ def create_result_template(proc,filename=None):
     import tempfile
     import os,os.path
     if filename == None:
-        tmpl_path = os.path.join(project_path,"templates")
+        tmpl_path = os.path.join(boinctools.project_path,"templates")
         file = tempfile.NamedTemporaryFile(mode='w',delete=False,dir=tmpl_path)
     else:
         file = open(filename,"w")
@@ -118,7 +120,7 @@ def create_result_template(proc,filename=None):
 """)
     return dag.File(file.name)
 
-def stage_data(proc,source_dir = None, set_grp_perms = True, overwrite = True):
+def stage_files(proc,source_dir = None, set_grp_perms = True, overwrite = True):
     """
     Marshals input files to the grid server
 
@@ -134,17 +136,22 @@ def stage_data(proc,source_dir = None, set_grp_perms = True, overwrite = True):
     """
 
     import boinctools
-
+    import os.path as OP
+    
     unique_names = {}
 
-    for file in input_files:
+    if not source_dir:
+        from os import getcwd
+        source_dir = getcwd()
+
+    for file in proc.input_files:
         if file.dir:
             source_path = file.full_path()
         else:
             source_path = OP.join(source_dir,file.physical_name)
         unique_names[source_path] = unique_input_name(proc,file)
     
-    boinctools.stage_files(input_filesnames,source_dir, set_grp_perms, overwrite)
+    boinctools.stage_files(unique_names,source_dir, set_grp_perms, overwrite)
 
 
 def dag_marker_filename(wuname):
@@ -159,7 +166,7 @@ def dag_marker_filename(wuname):
     """
     from os import path as OP
     import os
-
+    project_path = boinctools.project_path
     cwd = os.getcwd()
     if cwd != project_path:
         os.chdir(project_path)
@@ -169,7 +176,7 @@ def dag_marker_filename(wuname):
         raise dag.DagException("Missing dag_lists in project directory: '%s'" % project_path)
     os.chdir("dag_lists")
 
-    marker_filename = dir_hier_path(wuname).replace("download/","dag_lists/")
+    marker_filename = boinctools.dir_hier_path(wuname).replace("download/","dag_lists/")
     marker_dir = OP.dirname(marker_filename)
     if not OP.isdir(marker_dir):
         os.mkdir(marker_dir)
@@ -261,7 +268,7 @@ def schedule_work(proc, dag_path):
     wu_tmpl = OP.split(proc.workunit_template.physical_name)[1]
     res_tmpl = OP.split(proc.result_template.physical_name)[1]
     input_filenames = [unique_input_name(proc,input) for input in proc.input_files]
-    boinctools.schedule_work(proc.cmd,proc.workunit_name,wu_tmpl,res_templ,input_files)
+    boinctools.schedule_work(proc.cmd,proc.workunit_name,wu_tmpl,res_tmpl,input_filenames)
     make_dag_marker(proc.workunit_name,dag_path)
 
 def create_work(the_dag,dagfile):
