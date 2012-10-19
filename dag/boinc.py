@@ -226,6 +226,7 @@ def result_to_dag(result_name):
     Returns: dag.DAG object for the result
     Raises dag_utils.NoDagMarkerException if the result does not have a dag marker file.
     """
+    import dag
     import dag.util as dag_utils
     import re
     import os.path as OP
