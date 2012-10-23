@@ -68,7 +68,7 @@ def gsub(input,start_jobs = True):
     """
     import os
     from os import path as OP
-    import boinctools
+    import dag.boinc
 
     def save_dag(the_dag, fn):
         import stat
@@ -92,7 +92,7 @@ def gsub(input,start_jobs = True):
     
     abs_dag_path = OP.abspath(dagfile)
     try:
-        boinctools.create_work(root_dag,abs_dag_path)
+        dag.boinc.create_work(root_dag,abs_dag_path)
     except Exception as e:
         import traceback
         print("Exception thrown creating work")
