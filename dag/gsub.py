@@ -99,7 +99,7 @@ def gsub(input,start_jobs = True):
         print("Message: %s" % e.message)
         traceback.print_exc()
 
-    save_dag(root_dag,dagfile)
+    root_dag.save()
     return root_dag
     
 

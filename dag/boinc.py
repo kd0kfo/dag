@@ -217,6 +217,23 @@ def marker_to_dagpath(filename):
         line = file.readline()
         (uid, dagpath) = line.split(" ")
         return dagpath.strip()
+
+def name_result2workunit(result_name):
+    """
+    Takes a BOINC result name and returns the workunit name
+
+    @param result_name: Name of Result
+    @type result_name: String
+    @return: Name of Workunit/Process
+    @rtype: String
+    """
+    import re
+    wuname = re.findall(r"^(.*)_\d*$",result_name)
+    if not wuname:
+            print("Malformed result name '%s'" % result_name)
+            return None
+    return wuname[0]
+    
     
 def result_to_dag(result_name):
     """
@@ -228,14 +245,10 @@ def result_to_dag(result_name):
     """
     import dag
     import dag.util as dag_utils
-    import re
     import os.path as OP
+
+    wuname = name_result2workunit(result_name)
     
-    wuname = re.findall(r"^(.*)_\d*$",result_name)
-    if len(wuname) == 0:
-            print("Malformed result name")
-            return None
-    wuname = wuname[0]
     marker_path = dag_marker_filename(wuname)
 
     try:
