@@ -431,3 +431,6 @@ def start_children(proc,root_dag,dag_filename):
         child.state = dag.States.RUNNING
         root_dag.save()
 
+def cancel_workunits(proc_list):
+    import boinctools
+    boinctools.cancel_workunits([proc.workunit_name for proc in proc_list])
