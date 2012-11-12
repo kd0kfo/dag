@@ -6,6 +6,8 @@ Interface module to boinctools. This allows processes in a DAG to interpret and 
 
 import boinctools
 
+forbidden_wu_names = ["all"]
+
 def unique_input_name(proc, file):
     """
     Creates a unique file name for input files associated with a work unit.
@@ -277,6 +279,9 @@ def schedule_work(proc, dag_path):
     import subprocess as SP
     import dag
     import boinctools
+
+    if proc.workunit_name in forbidden_wu_names:
+        raise Exception("The name '%s' is not allowed because it is a reserved word in the DAG system." % proc.workunit_name)
 
     wu_tmpl = OP.split(proc.workunit_template.physical_name)[1]
     res_tmpl = OP.split(proc.result_template.physical_name)[1]
