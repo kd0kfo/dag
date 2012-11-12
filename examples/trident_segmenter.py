@@ -4,7 +4,11 @@ import dag
 segment_fmt = "segmented-%s"
 default_fpops_est = 6E12
 default_chunk_size = 1500
-    
+
+def unique_name(prefix):
+    import random as R
+    i = R.randint(1,10000000)
+    return "%s-%d" % (prefix, i)
 
 class TridentInstance:
     def __init__(self, mirna, dna, args):
@@ -16,7 +20,9 @@ class TridentInstance:
         import os.path as OP
         dna_basename = OP.basename(self.dna)
         mirna_basename = OP.basename(self.mirna)
-        jobfile = dag.File(dna_basename + '_' + mirna_basename + "-job.xml","job.xml",temporary_file=True)
+        jobfilename = dna_basename + '_' + mirna_basename
+        jobfilename = unique_name(jobfilename) + "-job.xml"
+        jobfile = dag.File(jobfilename,"job.xml",temporary_file=True)
         with open(jobfile.physical_name,"w") as file:
             file.write("""
 <job_desc>

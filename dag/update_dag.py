@@ -23,7 +23,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
     
     if not OP.isfile(dagfile):
         raise Exception("Could not open '%s'" % dagfile)
-        
+
     root_dag = dag.load(dagfile)
 
     if cmd == "print":
@@ -44,8 +44,18 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
         for wuname in cmd_args:
             proc = root_dag.get_process(wuname)
             if cmd == "remove":
-                print("Removing %s" % wuname)
-                dag.boinc.remove_workunit(root_dag,proc)
+                if wuname == "all":
+                    from sys import stdin
+                    print("Are you sure you want to remove ALL workunits (yes or no)?")
+                    if not stdin.readline().strip() in ["y","Y","yes","Yes","YES"]:
+                        print("Canceled.")
+                        exit(1)
+                    for proc in root_dag.processes:
+                        print("Removing %s" % proc.workunit_name)
+                        dag.boinc.remove_workunit(root_dag,proc)
+                else:
+                    print("Removing %s" % wuname)
+                    dag.boinc.remove_workunit(root_dag,proc)
             if cmd in ["run","stage"]:
                 print("Staging %s" % wuname)
                 dag.boinc.stage_files(proc)
@@ -81,8 +91,25 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
 
 if __name__ == "__main__":
     from sys import argv
-    if len(argv) < 2:
+    from getopt import getopt
+    
+    dagfile = dag.DEFAULT_DAGFILE_NAME
+
+    
+    (optlist,args) = getopt(argv[1:],'d:',['dagfile='])
+
+    if not args:
         print_help()
         exit(1)
 
-    update_dag(argv[1],argv[2:])
+    for (opt,optarg) in optlist:
+        while opt[0] == '-':
+            opt = opt[1:]
+        if opt in ["d", "dagfile"]:
+            dagfile = optarg
+            print("Set dag file to %s" % optarg)
+        else:
+            print("Unknown option: '%s'" % optlist)
+            exit(1)
+
+    update_dag(args[0],args[1:],dagfile)

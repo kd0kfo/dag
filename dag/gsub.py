@@ -54,7 +54,7 @@ def create_dag(input_filename, parsers):
     return root_dag
 
 
-def gsub(input,start_jobs = True):
+def gsub(input,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME):
     """
     Reads a file containing a list of commands and parses them
     into workunits to be run on the grid. if start_jobs is true,
@@ -75,10 +75,8 @@ def gsub(input,start_jobs = True):
         print("Saved DAG as %s" % the_dag.save(fn))
         os.chmod(fn, stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IWGRP)
         
-
     parsers = {}
 
-    dagfile = "jobs.dag"
     if OP.isfile(dagfile):
         raise Exception("Jobs queue file already exists: \"%s\"" % dagfile)
 
@@ -108,10 +106,11 @@ if __name__ == "__main__":
     from sys import argv
     from getopt import getopt
 
+    dagfilename = dag.DEFAULT_DAGFILE_NAME
     start_jobs = True
     
-    (optlist,args) = getopt(argv[1:],'sv',['setup_only','version'])
-    
+    (optlist,args) = getopt(argv[1:],'d:sv',['dagfile=','setup_only','version'])
+
     for (opt,val) in optlist:
         while opt[0] == '-':
             opt = opt[1:]
@@ -120,6 +119,8 @@ if __name__ == "__main__":
             exit(0)
         elif opt in ['s','setup_only']:
             start_jobs = False
+        elif opt in ['d','dagfile']:
+            dagfilename = val
         else:
             from sys import stderr
             stderr.write("Unknown option '%s'\n" % opt)
@@ -129,5 +130,5 @@ if __name__ == "__main__":
     if len(args) == 0:
         print("Usage: gsub <filename>")
         exit(1)
-    if gsub(args[0],start_jobs) == None:
+    if gsub(args[0],start_jobs,dagfilename) == None:
         exit(1)

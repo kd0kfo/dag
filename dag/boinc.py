@@ -48,15 +48,14 @@ def create_workunit_template(proc):
             file.write("""
           <file_ref>
                <file_number>%d</file_number>
-               <file_name>%s</file_name>
                <open_name>%s</open_name>
                <copy_file/>
           </file_ref>
-        """ % (child_counter, unique_input_name(proc,i), i.logical_name))
+        """ % (child_counter, i.logical_name))
             child_counter += 1
         if len(proc.args) != 0:
             file.write("""
-        <command_line> %s </command_line>\n""" % " ".join(proc.args))
+        <command_line> %s </command_line>\n""" % proc.args)
         file.write("<rsc_fpops_bound>%e</rsc_fpops_bound>\n" % proc.rsc_fpops_bound)
         file.write("<rsc_fpops_est>%e</rsc_fpops_est>\n" % proc.rsc_fpops_est)
         file.write("<rsc_memory_bound>%e</rsc_memory_bound>\n" % proc.rsc_memory_bound)

@@ -1,3 +1,5 @@
+DEFAULT_DAGFILE_NAME = "jobs.dag"
+
 class DagException(Exception):
     """
     Generic Exception for DAG related problems.
