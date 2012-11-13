@@ -258,6 +258,8 @@ def result_to_dag(result_name):
         raise dag_utils.NoDagMarkerException("Missing DAG marker.\nError Message: %s\nFile: %s" % (ioe.strerror, marker_path))
     
     dagdir = OP.split(dagpath)[0]
+    if not OP.isfile(dagpath):
+        raise dag.MissingDAGFile("Missing dag file '%s' listed in marker '%s'" % (dagpath, marker_path))
     try:
         return dag.load(dagpath)
     except Exception as e:

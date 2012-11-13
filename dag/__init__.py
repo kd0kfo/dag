@@ -9,6 +9,9 @@ class DagException(Exception):
 class NoSuchProcess(DagException):
     pass
 
+class MissingDAGFile(DagException):
+    pass
+
 def enum(*sequential,**vals):
     the_enums = dict(zip(sequential, range(len(sequential))), **vals)
     return type('Enumeration',(),the_enums)

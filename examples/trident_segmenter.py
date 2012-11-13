@@ -76,11 +76,11 @@ def parse(args):
 
     num_files = 1
     if OP.isfile(dna):
-        num_files = chopper.chopper(dna,segment_fmt % dna,default_chunk_size)
+        num_files = chopper.chopper(dna,segment_fmt % OP.basename(dna),default_chunk_size)
 
     # sanity check chopper. No need to chop the sequence into one segment file
     if num_files == 1:
-        chopped_file = (segment_fmt + "-1") % dna
+        chopped_file = (segment_fmt + "-1") % OP.basename(dna)
         if OP.isfile(chopped_file):
             OP.os.unlink(chopped_file)
     else:
@@ -102,7 +102,7 @@ def parse(args):
         for i in list(range(1,num_files+1)):
             #iterate through segments and setup work units
             # for the sake of running on a grid, an output file is required.
-            segment_name = (segment_fmt + "-%s") % (dna,i)
+            segment_name = (segment_fmt + "-%s") % (OP.basename(dna),i)
             proc = TridentInstance(mirna,segment_name,strargs)
             if not have_output:
                 proc.args += " -out %s.out" % segment_name
