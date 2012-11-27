@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+
+from dag.update_dag import update_dag
+import dag
+
+def print_help():
+    from sys import argv
+    import os.path as OP
+    print("Usage: %s <cmd> [args]" % OP.basename(argv[0]))
+
+if __name__ == "__main__":
+    from sys import argv
+    from getopt import getopt
+    
+    dagfile = dag.DEFAULT_DAGFILE_NAME
+
+    
+    (optlist,args) = getopt(argv[1:],'d:',['dagfile='])
+
+    if not args:
+        print_help()
+        exit(1)
+
+    for (opt,optarg) in optlist:
+        while opt[0] == '-':
+            opt = opt[1:]
+        if opt in ["d", "dagfile"]:
+            dagfile = optarg
+        else:
+            print("Unknown option: '%s'" % optlist)
+            exit(1)
+
+    update_dag(args[0],args[1:],dagfile)
