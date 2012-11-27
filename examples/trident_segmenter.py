@@ -76,7 +76,7 @@ def parse(args):
 
     num_files = 1
     if OP.isfile(dna):
-        num_files = chopper.chopper(dna,segment_fmt % OP.basename(dna),default_chunk_size)
+        num_files = chopper.chopper(dna,segment_fmt % OP.basename(dna),default_chunk_size,overwrite = False)
 
     # sanity check chopper. No need to chop the sequence into one segment file
     if num_files == 1:
