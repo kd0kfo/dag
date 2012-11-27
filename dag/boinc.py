@@ -365,7 +365,7 @@ def remove_templates(proc):
         if OP.isfile(fn.full_path()):
             os.unlink(fn.full_path())
 
-def remove_workunit(root_dag, proc):
+def clean_workunit(root_dag, proc):
     """
     Removes and cleans a process from the DAG. This function
     will remove temporary files and connections to child processes.
@@ -396,9 +396,6 @@ def remove_workunit(root_dag, proc):
         marker_filename = dag_marker_filename(proc.workunit_name)
         if OP.isfile(marker_filename):
             os.unlink(marker_filename)
-
-    #Remove process from list of processes
-    root_dag.processes.remove(proc)
 
 def start_children(proc,root_dag,dag_filename):
     """

@@ -50,12 +50,19 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
                     if not stdin.readline().strip() in ["y","Y","yes","Yes","YES"]:
                         print("Canceled.")
                         exit(1)
+                    count = 0
                     for proc in root_dag.processes:
                         print("Removing %s" % proc.workunit_name)
-                        dag.boinc.remove_workunit(root_dag,proc)
+                        dag.boinc.clean_workunit(root_dag,proc)
+                        print(root_dag.get_process(proc.workunit_name))
+                        count += 1
+                    root_dag.processes = []# clear process list
                 else:
                     print("Removing %s" % wuname)
-                    dag.boinc.remove_workunit(root_dag,proc)
+                    dag.boinc.clean_workunit(root_dag,proc)
+                    root_dag.processes.remove(proc)# remove process
+
+
             if cmd in ["run","stage"]:
                 print("Staging %s" % wuname)
                 dag.boinc.stage_files(proc)
@@ -70,6 +77,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
 
             #save dag
             root_dag.save(dagfile)
+            print("updated dagfile")
     elif cmd == "start":
         dag.boinc.create_work(root_dag,OP.abspath(dagfile))
         root_dag.save(dagfile)
@@ -107,7 +115,6 @@ if __name__ == "__main__":
             opt = opt[1:]
         if opt in ["d", "dagfile"]:
             dagfile = optarg
-            print("Set dag file to %s" % optarg)
         else:
             print("Unknown option: '%s'" % optlist)
             exit(1)
