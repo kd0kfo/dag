@@ -37,7 +37,8 @@ if __name__ == "__main__":
     try:
         update_dag(args[0],args[1:],dagfile)
     except Exception as e:
+        import traceback
         if debug:
-            raise e
+            traceback.print_exc()
         else:
             exit(1)
