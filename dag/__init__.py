@@ -26,14 +26,37 @@ def enum(*sequential,**vals):
     the_enums = dict(zip(sequential, range(len(sequential))), **vals)
     return type('Enumeration',(),the_enums)
 
-States = enum('CREATED','STAGED','RUNNING','SUCCESS','FAIL')
+States = enum('CREATED','STAGED','RUNNING','SUCCESS','FAIL','NUM_STATES')
 def strstate(state):
+    """
+    Translates a state integer value to a String name
+    
+    @param: State enum value
+    @ptype state: int
+    @return: Name of state
+    @rtype: str
+    """
     if state == None:
         return 'None'
     for i in dir(States):
         if getattr(States,i) == state:
             return i
     return 'UNKNOWN'
+
+def intstate(state):
+    """
+    Translates an string name for a state to the integer value of the enum.
+
+    Returns None if the state string is not a valid state.
+
+    @param state: Name of state
+    @ptype state: str
+    @rtype: int
+    @return: State enum value
+    """
+    if state == "NUM_STATES" or not state in States.__dict__:
+        return None
+    return int(States.__dict__[state])
 
 class File:
     """
@@ -180,6 +203,9 @@ DAG is a directed acyclic graph. It stores a list of processes (nodes in the gra
             if i.workunit_name == wuname:
                 return i
         return None
+
+    def get_processes_by_state(self,state):
+        return [proc for proc in self.processes if proc.state == state]
 
     def is_empty(self):
         return self.processes == [] and self.graph == {}
