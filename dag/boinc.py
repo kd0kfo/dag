@@ -174,14 +174,14 @@ def dag_marker_filename(wuname):
     """
     from os import path as OP
     import os
+    import dag
     project_path = boinctools.project_path
     cwd = os.getcwd()
     if cwd != project_path:
         os.chdir(project_path)
 
     if not OP.isdir("dag_lists"):
-        print("In dir: %s" % os.getcwd())
-        raise dag.DagException("Missing dag_lists in project directory: '%s'" % project_path)
+        raise dag.DagException("Missing dag_lists in project directory: '%s'\nCurrent working directory: %s" % (project_path,os.getcwd()))
     os.chdir("dag_lists")
 
     marker_filename = boinctools.dir_hier_path(wuname).replace("download/","dag_lists/")
