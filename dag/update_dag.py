@@ -59,7 +59,6 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
                     for proc in root_dag.processes:
                         print("Removing %s" % proc.workunit_name)
                         dag.boinc.clean_workunit(root_dag,proc)
-                        print(root_dag.get_process(proc.workunit_name))
                         count += 1
                     root_dag.processes = []# clear process list
                 else:
