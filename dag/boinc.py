@@ -318,6 +318,8 @@ def create_work(the_dag,dagfile):
         return
     for proc in the_dag.processes:
         defer = False
+        if proc.state not in [dag.States.CREATED,dag.States.STAGED]:
+            continue
 
         #create process name
         proc.workunit_name = "%s-%09d" % (proc.cmd,int(random.random()*1000000000))

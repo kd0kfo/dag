@@ -12,10 +12,6 @@ This python module provides interface between BOINC C API and Python user code.
 import dag,dag.boinc
 import boinctools
 
-def print_help():
-    from sys import argv
-    print("Usage: %s <cmd> [args]" % argv[0])
-
 def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
     """
     This is the main forking function that operates on a DAG and its workunits
@@ -63,7 +59,6 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
                     for proc in root_dag.processes:
                         print("Removing %s" % proc.workunit_name)
                         dag.boinc.clean_workunit(root_dag,proc)
-                        print(root_dag.get_process(proc.workunit_name))
                         count += 1
                     root_dag.processes = []# clear process list
                 else:
@@ -106,26 +101,3 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
     else:
         raise Exception("Unknown command: %s" % cmd)
 
-if __name__ == "__main__":
-    from sys import argv
-    from getopt import getopt
-    
-    dagfile = dag.DEFAULT_DAGFILE_NAME
-
-    
-    (optlist,args) = getopt(argv[1:],'d:',['dagfile='])
-
-    if not args:
-        print_help()
-        exit(1)
-
-    for (opt,optarg) in optlist:
-        while opt[0] == '-':
-            opt = opt[1:]
-        if opt in ["d", "dagfile"]:
-            dagfile = optarg
-        else:
-            print("Unknown option: '%s'" % optlist)
-            exit(1)
-
-    update_dag(args[0],args[1:],dagfile)

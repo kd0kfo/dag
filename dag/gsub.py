@@ -109,35 +109,3 @@ def gsub(input,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME):
     root_dag.save()
     return root_dag
     
-
-
-if __name__ == "__main__":
-    from sys import argv
-    from getopt import getopt
-
-    dagfilename = dag.DEFAULT_DAGFILE_NAME
-    start_jobs = True
-    
-    (optlist,args) = getopt(argv[1:],'d:sv',['dagfile=','setup_only','version'])
-
-    for (opt,val) in optlist:
-        while opt[0] == '-':
-            opt = opt[1:]
-        if opt in ['v','version']:
-            print("0.0")
-            exit(0)
-        elif opt in ['s','setup_only']:
-            start_jobs = False
-        elif opt in ['d','dagfile']:
-            dagfilename = val
-        else:
-            from sys import stderr
-            stderr.write("Unknown option '%s'\n" % opt)
-            exit(1)
-
-
-    if len(args) == 0:
-        print("Usage: gsub <filename>")
-        exit(1)
-    if gsub(args[0],start_jobs,dagfilename) == None:
-        exit(1)

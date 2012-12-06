@@ -9,4 +9,5 @@ setup (name ='boincdag',
        author_email = 'David.Coss@stjude.org',
        license = 'GPL v3',
        packages = ['dag'],
+       scripts = ["scripts/gsub", "scripts/update_dag"]
        )
