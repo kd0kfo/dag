@@ -12,7 +12,7 @@ This python module provides interface between BOINC C API and Python user code.
 import dag,dag.boinc
 import boinctools
 
-def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
+def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
     """
     This is the main forking function that operates on a DAG and its workunits
 
@@ -57,12 +57,14 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag"):
                         exit(1)
                     count = 0
                     for proc in root_dag.processes:
-                        print("Removing %s" % proc.workunit_name)
+                        if debug:
+                            print("Removing %s" % proc.workunit_name)
                         dag.boinc.clean_workunit(root_dag,proc)
                         count += 1
                     root_dag.processes = []# clear process list
                 else:
-                    print("Removing %s" % wuname)
+                    if debug:
+                        print("Removing %s" % wuname)
                     dag.boinc.clean_workunit(root_dag,proc)
                     root_dag.processes.remove(proc)# remove process
 
