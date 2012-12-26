@@ -110,5 +110,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
         for i in proc_list:
             print(i)
     else:
+        if not debug:
+            print("Unknown command: %s" % cmd)
         raise Exception("Unknown command: %s" % cmd)
 
