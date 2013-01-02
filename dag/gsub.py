@@ -77,6 +77,7 @@ def gsub(input,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME):
     """
     import os
     from os import path as OP
+    import stat
     import dag.boinc
 
     def save_dag(the_dag, fn):
@@ -94,6 +95,14 @@ def gsub(input,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME):
         raise dag.DagException("Could not create DAG using submission file %s" % input)
 
     save_dag(root_dag,dagfile)
+    
+    # Check to see if the directory is writable. If not, issue warning.
+    dir_stat = os.stat(os.getcwd())
+    if dir_stat.st_mode & stat.S_IWUSR == 0:# Highly unlikely.
+        print("Warning - User cannot write to directory.")
+    if dir_stat.st_mode & stat.S_IWGRP == 0:# Quite possible.
+        print("Warning - Group cannot write to directory.")
+
     if not start_jobs:
         return root_dag
     
