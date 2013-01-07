@@ -12,6 +12,29 @@ This python module provides interface between BOINC C API and Python user code.
 import dag,dag.boinc
 import boinctools
 
+command_help = {
+    "cancel": "Stops a workunit.",
+    "help": "Displays help for commands. Usage: help <cmd>",
+    "list": "Lists all processes.",
+    "print": "Print information about a process. If a workunit name is not given, all processes are listed.",
+    "recreate": "Regenerates specified temporary files. Options are: 'result_template'",
+    "remove": "Removes a workunit. 'all' can be supplied instead of a workunit name to remove ALL of the workunits.",
+    "run": "Stars a specific process, by workunit name. This should be run after 'stage'",
+    "stage": "Copies necessary files to their required locations on the server.",
+    "start": "Starts ALL processes",
+    "state": "Prints processes in a given state. States are: {0}".format(", ".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)]))
+    
+    }
+
+def print_help(command = None):
+    if not command in command_help:
+        if command:
+            print("Unknown command: %s" % command)
+        print("Commands are %s" % ", ".join(command_help))
+        return
+    print("%s -- %s" % (command,command_help[command]))
+
+
 def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
     """
     This is the main forking function that operates on a DAG and its workunits
@@ -25,11 +48,19 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
     """
     from os import path as OP
     import dag,dag.boinc
-    
-    if not OP.isfile(dagfile):
-        raise Exception("Could not open '%s'" % dagfile)
 
-    root_dag = dag.load(dagfile)
+    def needs_dagfile(cmd):
+        return cmd not in ["help"]
+
+    if debug:
+        print("Running command: %s" % cmd)
+
+    # if the dag is needed (probably), load it.
+    root_dag = None
+    if needs_dagfile(cmd):
+        if not OP.isfile(dagfile):
+            raise Exception("Could not open '%s'" % dagfile)
+        root_dag = dag.load(dagfile)
 
     if cmd == "print":
         if len(cmd_args) == 0:
@@ -39,6 +70,11 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
                 if proc.workunit_name == cmd_args[0]:
                     print(proc)
             exit(0)
+    elif cmd == "help":
+        if not cmd_args:
+            print_help(None)
+        else:
+            print_help(cmd_args[0])
     elif cmd == "list":
         for proc in root_dag.processes:
             print("%s: %s " % (proc.workunit_name,proc.cmd))
