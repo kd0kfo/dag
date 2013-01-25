@@ -321,8 +321,9 @@ def create_work(the_dag,dagfile):
         if proc.state not in [dag.States.CREATED,dag.States.STAGED]:
             continue
 
-        #create process name
-        proc.workunit_name = "%s-%09d" % (proc.cmd,int(random.random()*1000000000))
+        #create process name, if one does not already exist
+        if not proc.workunit_name:
+            proc.workunit_name = "%s-%09d" % (proc.cmd,int(random.random()*1000000000))
         #setup workunit templates
         wu_tmpl = proc.workunit_template
         if wu_tmpl == None or not OP.isfile(wu_tmpl.physical_name):
