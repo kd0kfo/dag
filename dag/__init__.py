@@ -224,7 +224,6 @@ DAG is a directed acyclic graph. It stores a list of processes (nodes in the gra
         import lockfile
 
         file = None
-
         # Check filename.
         # * If filename is None *and* self.filename is None,
         #   use a temporary file
@@ -241,21 +240,33 @@ DAG is a directed acyclic graph. It stores a list of processes (nodes in the gra
         try:
             lock.acquire(timeout=10)
         except lockfile.LockTimeout:
-            raise DagException("Error saving DAG. DAG file %s is locked.")
+            raise DagException("Error saving DAG. DAG file %s is locked." % self.filename)
 
+        backup_filename = self.filename + ".bak"
         if file == None:
             try:
+                # Backup in case of problems
+                if OP.isfile(self.filename) and not OP.isfile(backup_filename):
+                    import shutil
+                    shutil.copyfile(self.filename,backup_filename)
                 file = open(self.filename,"wb")
             except Exception as e:
-                raise DagException("Saving DAG failed.\nCWD: %s" % os.getcwd())
+                raise DagException("Saving DAG failed.\nCWD: %s\nMessage: %s" % (os.getcwd(),e.message))
 
+        
         self.filename = OP.abspath(file.name) # Update filename
 
         # Dump the pickle
         cPickle.dump(self,file)
         retval = file.name
         file.close()
+        if OP.isfile(backup_filename):
+            try:
+                os.remove(backup_filename)
+            except Exception as e:
+                raise DagException("Could not remove backup DAG file '%s'.\nReason: %s" % (backup_filename, e.message))
         lock.release()
+        
         return retval
 
     def incomplete_prereqs(self,proc):
@@ -319,7 +330,7 @@ def load(pickle_filename):
     try:
         lock.acquire(timeout=10)
     except lockfile.LockTimeout:
-        raise DagException("Error saving DAG. DAG file %s is locked.")
+        raise DagException("Error saving DAG. DAG file %s is locked." % pickle_filename)
 
 
     file = open(pickle_filename,"rb")
