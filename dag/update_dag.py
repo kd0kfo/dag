@@ -92,11 +92,17 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
                         print("Canceled.")
                         exit(1)
                     count = 0
+                    progress_bar = None
+                    if not debug:
+                        from progressbar import ProgressBar, Percentage, Bar
+                        progress_bar = ProgressBar(widgets = [Percentage(), Bar()], maxval=len(dag.processes)).start()
                     for proc in root_dag.processes:
                         if debug:
                             print("Removing %s" % proc.workunit_name)
                         dag.boinc.clean_workunit(root_dag,proc)
                         count += 1
+                        if progress_bar:
+                            progress_bar.update(count)
                     root_dag.processes = []# clear process list
                 else:
                     if debug:
