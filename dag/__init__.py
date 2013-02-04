@@ -339,5 +339,3 @@ def load(pickle_filename):
     lock.release()
     return retval
 
-
-    
