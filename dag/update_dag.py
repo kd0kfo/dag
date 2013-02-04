@@ -137,14 +137,20 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
         dag.boinc.cancel_workunits(proc_list)
         root_dag.save()
     elif cmd == "state":
+        count_only = False
+        if "--count" in  cmd_args:
+            count_only = True
         state = dag.intstate(cmd_args[0])
         if state == None:
             print("%s is not a valid state." % cmd_args[0])
             print("States are %s" % ", ".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)]))
             raise dag.DagException("Invalid State")
         proc_list = root_dag.get_processes_by_state(state)
-        for i in proc_list:
-            print(i)
+        if count_only:
+            print("%s: %d" % (dag.strstate(state),len(proc_list)))
+        else:
+            for i in proc_list:
+                print(i)
     else:
         if not debug:
             print("Unknown command: %s" % cmd)
