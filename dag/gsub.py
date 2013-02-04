@@ -108,7 +108,7 @@ def gsub(input,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME):
     
     abs_dag_path = OP.abspath(dagfile)
     try:
-        dag.boinc.create_work(root_dag,abs_dag_path)
+        dag.boinc.create_work(root_dag,abs_dag_path,True)
     except Exception as e:
         import traceback
         print("Exception thrown creating work")
