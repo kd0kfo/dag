@@ -210,7 +210,7 @@ DAG is a directed acyclic graph. It stores a list of processes (nodes in the gra
     def is_empty(self):
         return self.processes == [] and self.graph == {}
 
-    def save(self,filename=None):
+    def save(self,filename=None,backup_first = True):
         """
         Serializes the DAG
 
@@ -246,7 +246,7 @@ DAG is a directed acyclic graph. It stores a list of processes (nodes in the gra
         if file == None:
             try:
                 # Backup in case of problems
-                if OP.isfile(self.filename) and not OP.isfile(backup_filename):
+                if backup_first and OP.isfile(self.filename) and not OP.isfile(backup_filename):
                     import shutil
                     shutil.copyfile(self.filename,backup_filename)
                 file = open(self.filename,"wb")
@@ -260,7 +260,7 @@ DAG is a directed acyclic graph. It stores a list of processes (nodes in the gra
         cPickle.dump(self,file)
         retval = file.name
         file.close()
-        if OP.isfile(backup_filename):
+        if backup_first and OP.isfile(backup_filename):
             try:
                 os.remove(backup_filename)
             except Exception as e:
@@ -339,5 +339,3 @@ def load(pickle_filename):
     lock.release()
     return retval
 
-
-    
