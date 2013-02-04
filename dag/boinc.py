@@ -298,7 +298,7 @@ def schedule_work(proc, dag_path):
     boinctools.schedule_work(proc.cmd,proc.workunit_name,wu_tmpl,res_tmpl,input_filenames)
     make_dag_marker(proc.workunit_name,dag_path)
 
-def create_work(the_dag,dagfile):
+def create_work(the_dag,dagfile, show_progress = False):
     """
     Creates a workunit by processing the dag and running stage_files and schedule_work.
 
@@ -313,10 +313,22 @@ def create_work(the_dag,dagfile):
     import random, stat
     import dag
     
+    progress_bar = None
+    progress_bar_counter = 0
 
     if the_dag.processes == None:
         return
+
+    if show_progress:
+        from progressbar import ProgressBar, Percentage, Bar
+        progress_bar = ProgressBar(widgets = [Percentage(), Bar()], maxval=len(dag.processes)).start()
+        
+
     for proc in the_dag.processes:
+        if progress_bar:
+            progress_bar_counter += 1
+            progress_bar.update(progress_bar_counter)
+
         defer = False
         if proc.state not in [dag.States.CREATED,dag.States.STAGED]:
             continue

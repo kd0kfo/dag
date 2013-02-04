@@ -121,7 +121,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
             root_dag.save(dagfile)
             print("updated dagfile")
     elif cmd == "start":
-        dag.boinc.create_work(root_dag,OP.abspath(dagfile))
+        dag.boinc.create_work(root_dag,OP.abspath(dagfile),True)
         root_dag.save(dagfile)
     elif cmd == "recreate":
         if not cmd_args:
