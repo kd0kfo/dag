@@ -95,7 +95,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
                     progress_bar = None
                     if not debug:
                         from progressbar import ProgressBar, Percentage, Bar
-                        progress_bar = ProgressBar(widgets = [Percentage(), Bar()], maxval=len(dag.processes)).start()
+                        progress_bar = ProgressBar(widgets = [Percentage(), Bar()], maxval=len(root_dag.processes)).start()
                     for proc in root_dag.processes:
                         if debug:
                             print("Removing %s" % proc.workunit_name)

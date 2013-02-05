@@ -321,7 +321,8 @@ def create_work(the_dag,dagfile, show_progress = False):
 
     if show_progress:
         from progressbar import ProgressBar, Percentage, Bar
-        progress_bar = ProgressBar(widgets = [Percentage(), Bar()], maxval=len(dag.processes)).start()
+        progress_bar = ProgressBar(widgets = [Percentage(), Bar()], maxval=len(the_dag.processes)).start()
+        print("Submitting %d jobs" % len(the_dag.processes))
         
 
     for proc in the_dag.processes:
@@ -371,6 +372,10 @@ def create_work(the_dag,dagfile, show_progress = False):
         schedule_work(proc,dagfile)
         proc.state = dag.States.RUNNING
         the_dag.save()
+
+    # Restore use of line returns from progress bar
+    if progress_bar:
+        print("")
 
 def remove_templates(proc):
     """
