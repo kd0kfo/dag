@@ -1,7 +1,8 @@
 import dag
 
 # Defaults
-segment_fmt = "segmented-%s"
+segment_fmt = ".GRID/segmented-%s"
+temp_directory = ".GRID"
 default_fpops_est = 6E12
 default_chunk_size = 1500
 
@@ -22,8 +23,10 @@ class TridentInstance:
         mirna_basename = OP.basename(self.mirna)
         jobfilename = dna_basename + '_' + mirna_basename
         jobfilename = unique_name(jobfilename) + "-job.xml"
+        jobfilename = OP.join(temp_directory,jobfilename)
+        jobfilename = OP.join(OP.os.getcwd(),jobfilename)
         jobfile = dag.File(jobfilename,"job.xml",temporary_file=True)
-        with open(jobfile.physical_name,"w") as file:
+        with open(jobfile.full_path(),"w") as file:
             file.write("""
 <job_desc>
     <task>
@@ -38,6 +41,7 @@ class TridentInstance:
 
     def get_dag_node(self):
         import re
+        import os.path as OP
         from Bio import SeqIO
 
         # Estimate compute time based on mirna count
@@ -49,6 +53,7 @@ class TridentInstance:
         for infile in input:
             if "segmented" in infile.physical_name:
                 infile.temp_file = True
+                infile.dir = OP.abspath(infile.dir)
         output = []
         if self.args:
             match = re.findall("-out\s*(\S*)",self.args)
@@ -73,6 +78,9 @@ def parse(args):
     print("Running trident with miRNA %s and DNA %s" % (mirna, dna))
     if len(args) > 2:
         print ("with flags %s" % " ".join(args[2:]))
+
+    if not OP.isdir(".GRID"):
+        OP.os.mkdir(".GRID")
 
     num_files = 1
     if OP.isfile(dna):
