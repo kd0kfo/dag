@@ -103,6 +103,8 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
                         count += 1
                         if progress_bar:
                             progress_bar.update(count)
+                    if progress_bar:
+                        print("")# reset line return
                     root_dag.processes = []# clear process list
                 else:
                     if debug:
