@@ -14,11 +14,15 @@ class Tester(Command):
 
     def run(self):
         import test
-        print("Finally, there is a test.")
+        print("Testing dag")
         if test.run():
             print("Success")
         else:
             print("Failure")
+
+        print("Testing progress bar")
+        test.test_progress_bar()
+        print("Did you see a progress bar?")
  
 setup (name ='boincdag',
        version = '1.0',

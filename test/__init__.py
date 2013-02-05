@@ -49,3 +49,13 @@ def run():
     os.unlink(dag_filename)
     
     return end(True)
+
+def test_progress_bar():
+    from progressbar import ProgressBar, Percentage, Bar
+    from time import sleep
+    progress_bar = ProgressBar(widgets = [Percentage(), Bar()], maxval=10).start()
+    for i in range(1,10):
+        progress_bar.update(i)
+        sleep(1)
+    print("")
+    return True
