@@ -44,6 +44,9 @@ def create_dag(input_filename, parsers):
             if line[0] == '#':
                 continue
             tokens = line.split(' ')
+            for token in tokens:
+                if not token:
+                    tokens.remove(token)
             pname = tokens[0]
             parser_args = tokens[1:]
             if not pname in parsers.keys():
