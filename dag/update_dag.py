@@ -148,7 +148,12 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
         count_only = False
         if "--count" in  cmd_args:
             count_only = True
-        for state_name in cmd_args[0].split(","):
+
+        states_to_view = cmd_args[0]
+        if states_to_view == "all":
+            states_to_view = ",".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)])
+            
+        for state_name in states_to_view.split(","):
             state = dag.intstate(state_name)
             if state == None:
                 print("%s is not a valid state." % state_name)
