@@ -22,7 +22,7 @@ command_help = {
     "run": "Stars a specific process, by workunit name. This should be run after 'stage'",
     "stage": "Copies necessary files to their required locations on the server.",
     "start": "Starts ALL processes",
-    "state": "Prints processes in a given state. States are: {0}".format(", ".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)]))
+    "state": "Prints processes in a given state. The optional \"--count\" flag may be used to show only a count of the number of processes in that state. States are: {0}".format(", ".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)]))
     
     }
 
