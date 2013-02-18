@@ -3,6 +3,14 @@
 from dag import gsub
 import dag
 
+def print_usage():
+    print("Usage: gsub [options] <filename>")
+    print("Options:")
+    print("-d, --dagfile FILE\tSpecify DAG file to be used. Default: jobs.dag")
+    print("-i, --init FILE\t\tSpecify input file to be used. Default: $HOME/.boincdag")
+    print("-s, --setup_only\t\tSetup the DAG, but do not stage and run jobs. Default: off")
+    print("-v, --version\t\tPrint version info.")
+    
 if __name__ == "__main__":
     from sys import argv
     from getopt import getopt
@@ -11,13 +19,16 @@ if __name__ == "__main__":
     dagfilename = dag.DEFAULT_DAGFILE_NAME
     start_jobs = True
     
-    (optlist,args) = getopt(argv[1:],'d:i:sv',['dagfile=','init=','setup_only','version'])
+    (optlist,args) = getopt(argv[1:],'d:hi:sv',['dagfile=','help','init=','setup_only','version'])
 
     for (opt,val) in optlist:
         while opt[0] == '-':
             opt = opt[1:]
         if opt in ['d','dagfile']:
             dagfilename = val
+        elif opt in ["h","help"]:
+            print_usage()
+            exit(0)
         elif opt in ['i',"init"]:
             init_filename = val
         elif opt in ['s','setup_only']:
@@ -32,7 +43,8 @@ if __name__ == "__main__":
 
 
     if len(args) == 0:
-        print("Usage: gsub <filename>")
+        print_usage()
         exit(1)
+        
     if gsub.gsub(args[0],start_jobs,dagfilename,init_filename) == None:
         exit(1)
