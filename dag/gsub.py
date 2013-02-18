@@ -48,13 +48,14 @@ def create_dag(input_filename, parsers, init_file = None):
                 if not token:
                     tokens.remove(token)
             pname = tokens[0]
+            parser_args = tokens[1:] # used by function below
             if not pname in parsers.keys():
                 print("No function for %s" % pname)
                 print("Known functions: ", parsers.keys())
                 return None
             print("Running %s(parser_args)" % parsers[pname])
             funct = "%s(parser_args)" % parsers[pname]
-            proc_list = eval(funct)
+            proc_list = eval(funct) # uses parser_args
 
             if proc_list is None:
                 continue
