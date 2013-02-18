@@ -91,7 +91,18 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
     if OP.isfile(dagfile):
         raise Exception("Jobs queue file already exists: \"%s\"" % dagfile)
 
-    root_dag = create_dag(input_filename,parsers,init_filename)
+    # Init file
+    init_file = None
+    if init_filename:
+        try:
+            init_file = open(init_filename,"r")
+        except IOError as ioe:
+            from sys import stderr
+            stderr.write("Could not read init file '%s'\n" % init_filename)
+            stderr.write("Reason: %s\n" % ioe.stderr)
+            exit(ioe.errno)
+            
+    root_dag = create_dag(input_filename,parsers,init_file)
     if root_dag is None:
         raise dag.DagException("Could not create DAG using submission file %s" % input)
 
