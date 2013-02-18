@@ -26,6 +26,7 @@ def enum(*sequential,**vals):
     the_enums = dict(zip(sequential, range(len(sequential))), **vals)
     return type('Enumeration',(),the_enums)
 
+Engine = enum('BOINC','LSF')
 States = enum('CREATED','STAGED','RUNNING','SUCCESS','FAIL','NUM_STATES')
 def strstate(state):
     """
@@ -188,10 +189,11 @@ class DAG:
     """
 DAG is a directed acyclic graph. It stores a list of processes (nodes in the graph). The Graph class connects nodes by their input/output files.
 """
-    def __init__(self):
+    def __init__(self,engine = Engine.BOINC):
         self.processes = []
         self.graph = Graph()
         self.filename = ""
+        self.engine = engine
 
     def add_process(self,proc):
         self.processes.append(proc)
