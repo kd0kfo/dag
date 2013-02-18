@@ -12,7 +12,7 @@ This python module provides interface between BOINC C API and Python user code.
 import dag
 import dag.util as dag_utils
 
-def create_dag(input_filename, parsers):
+def create_dag(input_filename, parsers, init_file = None):
     """
     Takes an input file that contains a list of commands and generates a dag.
     Jobs that have all of their prerequisites met are started, unless the
@@ -25,19 +25,19 @@ def create_dag(input_filename, parsers):
     
     Returns: dag.DAG object if successful. Otherwise, None is returned
     """
-    from os import path as OP
     
     # PROJECT SPECIFIC DEFINES. FACTOR OUT.
-    init_file = dag_utils.open_user_init()
-
     if not init_file:
+        init_file = dag_utils.open_user_init()
+
+    if not init_file: # If we still don't have the init file, there is a problem.
         raise dag.DagException("Could not open init file. File not found.")
 
     exec(compile(init_file.read(), init_file.name, 'exec'))
 
     root_dag = dag.DAG()
-    with open(input_filename,"rb") as file:
-        for line in file:
+    with open(input_filename,"rb") as infile:
+        for line in infile:
             line = line.strip()
             if len(line) == 0:
                 continue
@@ -48,7 +48,6 @@ def create_dag(input_filename, parsers):
                 if not token:
                     tokens.remove(token)
             pname = tokens[0]
-            parser_args = tokens[1:]
             if not pname in parsers.keys():
                 print("No function for %s" % pname)
                 print("Known functions: ", parsers.keys())
@@ -66,7 +65,7 @@ def create_dag(input_filename, parsers):
     return root_dag
 
 
-def gsub(input,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME):
+def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,init_filename=None):
     """
     Reads a file containing a list of commands and parses them
     into workunits to be run on the grid. if start_jobs is true,
@@ -84,16 +83,16 @@ def gsub(input,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME):
     import dag.boinc
 
     def save_dag(the_dag, fn):
-        import stat
+        from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
         print("Saved DAG as %s" % the_dag.save(fn))
-        os.chmod(fn, stat.S_IRUSR|stat.S_IWUSR|stat.S_IRGRP|stat.S_IWGRP)
+        os.chmod(fn, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP)
         
     parsers = {}
 
     if OP.isfile(dagfile):
         raise Exception("Jobs queue file already exists: \"%s\"" % dagfile)
 
-    root_dag = create_dag(input,parsers)
+    root_dag = create_dag(input_filename,parsers,init_filename)
     if root_dag is None:
         raise dag.DagException("Could not create DAG using submission file %s" % input)
 
