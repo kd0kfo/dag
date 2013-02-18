@@ -9,8 +9,7 @@ dag.update_dag
 
 This python module provides interface between BOINC C API and Python user code.
 """
-import dag,dag.boinc
-import boinctools
+import dag
 
 command_help = {
     "cancel": "Stops a workunit.",
@@ -47,8 +46,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
     Raises Exception if the DAG file is missing or if the command is unknown.
     """
     from os import path as OP
-    import dag,dag.boinc
-
+    
     def needs_dagfile(cmd):
         return cmd not in ["help"]
 
