@@ -14,18 +14,28 @@ def print_usage():
 if __name__ == "__main__":
     from sys import argv
     from getopt import getopt
+    from dag import Engine,enum2string
 
     init_filename = None
     dagfilename = dag.DEFAULT_DAGFILE_NAME
     start_jobs = True
     
-    (optlist,args) = getopt(argv[1:],'d:hi:sv',['dagfile=','help','init=','setup_only','version'])
+    (optlist,args) = getopt(argv[1:],'d:e:hi:sv',['dagfile=','engine=','help','init=','setup_only','version'])
 
+    engine = Engine.BOINC
     for (opt,val) in optlist:
         while opt[0] == '-':
             opt = opt[1:]
         if opt in ['d','dagfile']:
             dagfilename = val
+        elif opt in ["e","engine"]:
+            if not val in Engine.__dict__:
+                print("Unknown Engine")
+                engine_list = ""
+                for i in range(0,Engine.NUM_ENGINES):
+                    engine_list += " " + enum2string(Engine,i)
+                print("Acceptable values are:" + engine_list)
+                exit(1)
         elif opt in ["h","help"]:
             print_usage()
             exit(0)
