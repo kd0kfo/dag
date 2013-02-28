@@ -59,7 +59,7 @@ def string2enum(enum,string):
     """
     if not string in enum.__dict__:
         return None
-    return int(States.__dict__[string])
+    return int(enum.__dict__[string])
 
 def strstate(state):
     """
