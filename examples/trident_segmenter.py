@@ -4,7 +4,7 @@ import dag
 segment_fmt = ".GRID/segmented-%s"
 temp_directory = ".GRID"
 default_fpops_est = 6E12
-default_chunk_size = 1500
+default_chunk_size = 1500 # based on score threshold of 140
 
 def unique_name(prefix):
     import random as R
@@ -84,7 +84,14 @@ def parse(args):
 
     num_files = 1
     if OP.isfile(dna):
-        num_files = chopper.chopper(dna,segment_fmt % OP.basename(dna),default_chunk_size,overwrite = False)
+        chunk_size = default_chunk_size
+        if "-sc" in args:
+            for i in range(0,len(args)):
+                if args[i] == "-sc":
+                    if i+1 < len(args):
+                        if int(args[i+1]) < 140:
+                            chunk_size /= 3
+        num_files = chopper.chopper(dna,segment_fmt % OP.basename(dna),chunk_size,overwrite = False)
 
     # sanity check chopper. No need to chop the sequence into one segment file
     if num_files == 1:
