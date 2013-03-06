@@ -51,8 +51,8 @@ def clean_workunit(root_dag,proc):
         import dag.boinc
         dag.boinc.clean_workunit(root_dag,proc)
     elif root_dag.engine == Engine.LSF:
-        import dag.boinc
-        dag.boinc.clean_workunit(root_dag,proc)
+        import dag.lsf
+        dag.lsf.clean_workunit(root_dag,proc)
     else:
         from dag import DagException
         raise DagException("Invalid engine id: %d" % root_dag.engine)

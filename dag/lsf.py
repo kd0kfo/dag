@@ -22,6 +22,36 @@ def create_work(the_dag,dagfile, show_progress = False):
     Returns: no value
     Throws Exception if an input file does not exist and is not part of a parent process.
     """
+
+    def get_command_string(proc):
+        retval = proc.executable_name
+        if proc.args:
+            retval += " " + proc.args
+        return retval
     
+    def make_bsub(command,proc):
+        import random
+        import os.path as OP
+        if not proc.workunit_name:
+            proc.workunit_name = proc.cmd + "-" + ("%09d" % int(random.random()*1000000000))
+        filename = "%s.bsub" % proc.workunit_name
+        if not OP.isfile(filename):
+            with open(filename,"w") as script_file:
+                script_file.write("#BSUB -J %s\n" % proc.workunit_name)
+                script_file.write("#BSUB -P %s\n" % proc.project_name)
+                script_file.write("#BSUB -app %s\n" % proc.application_profile)
+                script_file.write("#BSUB -eo {0}.err -oo {0}.out\n".format(proc.workunit_name))
+                script_file.write("\n%s\n" % command)
+
     import dag
-    raise dag.DagException("Need to add create work function!!")
+    import subprocess
+    
+    proc = the_dag.processes[0]
+    cmd = get_command_string(proc)
+    make_bsub(cmd,proc)
+    
+    subprocess.call("bsub < %s.bsub" % proc.workunit_name,shell=True)
+    
+
+def clean_workunit(root_dag, proc):
+    raise Exception("ADD CLEAN FUNCTION!!!!")
