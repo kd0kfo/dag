@@ -56,6 +56,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
     # if the dag is needed (probably), load it.
     root_dag = None
     if needs_dagfile(cmd):
+        import dag
         if not OP.isfile(dagfile):
             raise Exception("Could not open '%s'" % dagfile)
         root_dag = dag.load(dagfile)
@@ -127,6 +128,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
             root_dag.save(dagfile)
             print("updated dagfile")
     elif cmd == "start":
+        import dag.boinc
         dag.boinc.create_work(root_dag,OP.abspath(dagfile),True)
         root_dag.save(dagfile)
     elif cmd == "recreate":
