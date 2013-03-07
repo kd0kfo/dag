@@ -98,6 +98,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
                     for proc in root_dag.processes:
                         if debug:
                             print("Removing %s" % proc.workunit_name)
+                        import dag.boinc
                         dag.boinc.clean_workunit(root_dag,proc)
                         count += 1
                         if progress_bar:
