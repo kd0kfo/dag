@@ -121,6 +121,7 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
     
     abs_dag_path = OP.abspath(dagfile)
     try:
+        import dag
         if root_dag.engine == dag.Engine.BOINC:
             import dag.boinc
             dag.boinc.create_work(root_dag,abs_dag_path,True)
