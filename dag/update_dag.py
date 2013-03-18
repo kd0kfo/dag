@@ -142,6 +142,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
         else:
             print("Do not know how to recreate: '%s'" % cmd_args[0])
     elif cmd == "cancel":
+        import dag.boinc
         proc_list = [root_dag.get_process(wuname) for wuname in cmd_args]
         dag.boinc.cancel_workunits(proc_list)
         root_dag.save()
