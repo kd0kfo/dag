@@ -21,7 +21,8 @@ command_help = {
     "run": "Stars a specific process, by workunit name. This should be run after 'stage'",
     "stage": "Copies necessary files to their required locations on the server.",
     "start": "Starts ALL processes",
-    "state": "Prints processes in a given state. The optional \"--count\" flag may be used to show only a count of the number of processes in that state. States are: {0}".format(", ".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)]))
+    "state": "Prints processes in a given state. The optional \"--count\" flag may be used to show only a count of the number of processes in that state. States are: {0}".format(", ".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)])),
+    "update": "Update the state of a workunit."
     
     }
 
@@ -74,6 +75,33 @@ def schedule_work(root_dag,proc,dagfile):
     elif root_dag.engine != Engine.LSF:
         from dag import DagException
         raise DagException("Invalid engine id: %d" % root_dag.engine)
+
+def update_state(cmd_args, root_dag, debug):
+    from dag import Engine
+    if not cmd_args:
+        from dag import DagException
+        raise DagException("Missing workunit name for update.")
+
+    proc = root_dag.get_process(cmd_args[0])
+    if not proc:
+        from dag import DagException
+        raise DagException("{0} not found in workunit list.".format(cmd_args))
+
+    if root_dag.engine == Engine.BOINC:
+        if len(cmd_args) < 2:
+            from dag import DagException
+            raise DagException("For BOINC, a state name is needed to run update")
+        new_state = cmd_args[1]
+        proc.state = intstate(new_state)
+        root_dag.save()
+    elif root_dag.engine == Engine.LSF:
+        from lsf import get_state
+        proc.state = get_state(proc)
+        root_dag.save()
+    else:
+        from dag import DagException
+        raise DagException("Invalid engine id: %d" % root_dag.engine)
+        
 
 def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
     """
@@ -190,6 +218,8 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
         proc_list = [root_dag.get_process(wuname) for wuname in cmd_args]
         dag.boinc.cancel_workunits(proc_list)
         root_dag.save()
+    elif cmd == "update":
+        update_state(cmd_args,root_dag,debug)
     elif cmd == "state":
         count_only = False
         if "--count" in  cmd_args:
