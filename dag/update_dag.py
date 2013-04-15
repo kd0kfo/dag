@@ -17,6 +17,7 @@ command_help = {
     "list": "Lists all processes.",
     "print": "Print information about a process. If a workunit name is not given, all processes are listed.",
     "recreate": "Regenerates specified temporary files. Options are: 'result_template'",
+    "reset": "Clears generated values, such as workunit name, and moves process to CREATED state.",
     "remove": "Removes a workunit. 'all' can be supplied instead of a workunit name to remove ALL of the workunits.",
     "run": "Stars a specific process, by workunit name. This should be run after 'stage'",
     "stage": "Copies necessary files to their required locations on the server.",
@@ -211,6 +212,15 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
             print("Created result template")
         else:
             print("Do not know how to recreate: '%s'" % cmd_args[0])
+    elif cmd == "reset":
+        for wuname in cmd_args:
+            proc = root_dag.get_process(wuname)
+            clean_workunit(root_dag,proc)
+            proc.workunit_name = None
+            proc.workunit_template = None
+            proc.result_template = None
+            proc.state = dag.States.CREATED
+            root_dag.save()
     elif cmd == "cancel":
         if root_dag.engine != dag.Engine.BOINC:
             raise dag.DagException("Can only cancel BOINC jobs.")
