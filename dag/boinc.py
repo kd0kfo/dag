@@ -295,7 +295,10 @@ def schedule_work(proc, dag_path):
     wu_tmpl = OP.split(proc.workunit_template.physical_name)[1]
     res_tmpl = OP.split(proc.result_template.physical_name)[1]
     input_filenames = [unique_input_name(proc,input) for input in proc.input_files]
-    boinctools.schedule_work(proc.cmd,proc.workunit_name,wu_tmpl,res_tmpl,input_filenames)
+    delay_bounds = None
+    if hasattr(proc,"deadline"):
+        delay_bounds = proc.deadline
+    boinctools.schedule_work(proc.cmd,proc.workunit_name,wu_tmpl,res_tmpl,input_filenames,delay_bounds)
     make_dag_marker(proc.workunit_name,dag_path)
 
 def create_work(the_dag,dagfile, show_progress = False):
