@@ -410,7 +410,10 @@ def clean_workunit(root_dag, proc):
 
     #Remove connection(s) to child node(s)
     for output in proc.output_files:
-        root_dag.graph[output].remove(proc)
+        if not output in root_dag.graph:
+            continue
+        if proc in root_dag.graph[output]:
+            root_dag.graph[output].remove(proc)
         if len(root_dag.graph[output]) == 0:
             root_dag.graph.pop(output)
 
