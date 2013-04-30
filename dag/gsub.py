@@ -36,12 +36,21 @@ def create_dag(input_filename, parsers, init_file = None):
     exec(compile(init_file.read(), init_file.name, 'exec'))
 
     root_dag = dag.DAG()
+    parser_kmap = {}
     with open(input_filename,"rb") as infile:
         for line in infile:
             line = line.strip()
             if len(line) == 0:
                 continue
             if line[0] == '#':
+                if line[0:7] == "#define":
+                    kmap_tokens = line.split()
+                    if not kmap_tokens or len(kmap_tokens) < 2:
+                        dag.DagException("Invalid define line.\nExpected:\n#define key [value]\nReceived:\n{0}".format(line))
+                    if len(kmap_tokens) == 2:
+                        parser_kmap[kmap_tokens[1]] = True
+                    else:
+                        parser_kmap[kmap_tokens[1]] = kmap_tokens[2:]
                 continue
             tokens = line.split(' ')
             for token in tokens:
@@ -53,8 +62,9 @@ def create_dag(input_filename, parsers, init_file = None):
                 print("No function for %s" % pname)
                 print("Known functions: ", parsers.keys())
                 return None
-            print("Running %s(parser_args)" % parsers[pname])
-            funct = "%s(parser_args)" % parsers[pname]
+            print("Running %s(parser_args,parser_kmap)" % parsers[pname])
+            
+            funct = "%s(parser_args,parser_kmap)" % parsers[pname]
             proc_list = eval(funct) # uses parser_args
 
             if proc_list is None:
