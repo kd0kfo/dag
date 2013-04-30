@@ -5,6 +5,7 @@ segment_fmt = ".GRID/segmented-%s"
 temp_directory = ".GRID"
 default_fpops_est = 6E12
 default_chunk_size = 1500 # based on score threshold of 140
+default_deadline = 4*86400 # Deadline is in seconds
 
 def unique_name(prefix):
     import random as R
@@ -60,10 +61,10 @@ class TridentInstance:
             if match:
                 output.append(dag.File(match[0],max_nbytes=250e6))
         input.append(self.create_job_xml())
-        return dag.Process("trident",input,output,arguments = self.args,rsc_fpops_est = fpops_est,rsc_fpops_bound = fpops_est*5)
+        return dag.Process("trident",input,output,arguments = self.args,rsc_fpops_est = fpops_est,rsc_fpops_bound = fpops_est*5,deadline = default_deadline)
 
 
-def parse(args):
+def parse(args,kmap = {}):
     import os.path as OP
     import getopt
     from trident import chromosome_chopper as chopper
@@ -71,6 +72,16 @@ def parse(args):
     if len(args) < 2:
         print("trident processes require at least two filenames")
         return None
+
+    header_map = {}
+    if 'assembly' in kmap:
+        header_map['assembly'] = " ".join(kmap['assembly'])
+        print("Labeling Assembly: {0}".format(header_map['assembly']))
+    if 'species' in kmap:
+        header_map['species'] = kmap['species']
+        if len(header_map['species']) > 2:
+            print("WARNING: Species contains more than three words.")
+        print("Labeling Species: {0}".format(header_map['species']))
 
     mirna = args[0]
     dna = args[1]
@@ -91,7 +102,7 @@ def parse(args):
                     if i+1 < len(args):
                         if int(args[i+1]) < 140:
                             chunk_size /= 3
-        num_files = chopper.chopper(dna,segment_fmt % OP.basename(dna),chunk_size,overwrite = False)
+        num_files = chopper.chopper(dna,segment_fmt % OP.basename(dna),chunk_size,overwrite = False,header_map = header_map)
 
     # sanity check chopper. No need to chop the sequence into one segment file
     if num_files == 1:
