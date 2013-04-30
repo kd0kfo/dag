@@ -24,8 +24,8 @@ class Tester(Command):
         test.test_progress_bar()
         print("Did you see a progress bar?")
  
-setup (name ='boincdag',
-       version = '1.0',
+setup (name ='dag',
+       version = '1.1',
        description = 'DAG Batch Job Creator for BOINC',
        author = 'David Coss, PhD',
        author_email = 'David.Coss@stjude.org',
