@@ -19,11 +19,16 @@ def create_dag(input_filename, parsers, init_file = None):
     --setup_only flag is provided.
 
     Arguments:
-    input_filename -- String filename to be parsed into a DAG
-    parsers -- Dictionary that maps string command names to functions that
-    are used to create DAG.
+    @param input_filename: Filename to be parsed into a DAG
+    @type input_filename: str
+    @param parsers: Dictionary that maps string command names to functions that are used to create DAG.
+    @type parsers: dict
+    @param init_file: Optional file to be used for startup variables and routines.
+    @type init_file: file
     
-    Returns: dag.DAG object if successful. Otherwise, None is returned
+    Returns: 
+    @return:  DAG object if successful. Otherwise, None is returned
+    @rtype: dag.DAG
     """
     
     # PROJECT SPECIFIC DEFINES. FACTOR OUT.
@@ -36,7 +41,7 @@ def create_dag(input_filename, parsers, init_file = None):
     exec(compile(init_file.read(), init_file.name, 'exec'))
 
     root_dag = dag.DAG()
-    parser_kmap = {}
+    parser_kmap = {} # used as the second argument of parser functions (below)
     with open(input_filename,"rb") as infile:
         for line in infile:
             line = line.strip()
@@ -81,12 +86,21 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
     Reads a file containing a list of commands and parses them
     into workunits to be run on the grid. if start_jobs is true,
     workunites that are ready to be run are submitted to the scheduler.
-
-    @type input: String
-    @param input: filename of commands to be parsed
     
-    @type start_jobs: Boolean
+    Lines beginning with '#' are considered directives for gsub itself.
+    Current gsub directives are: #define
+    If '#' is followed by something other than the directive, 
+    the line is ignored.
+    #define lines are passed to the parser function using a dict 
+    as the second argument, which maps the first string in the line 
+    (after #define) to the remain lines (as a list of strings).
+    
+    @param input_filename: filename of commands to be parsed
+    @type input_filename: String
     @param start_jobs: Indicates whether jobs should be started if they are ready (Default: True).
+    @type start_jobs: Boolean
+    @param dagfile: Optional DAG filename to be used to save the DAG object. File must not already exist.
+    @type dagfile: str
     """
     import os
     from os import path as OP
