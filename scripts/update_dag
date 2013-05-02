@@ -52,4 +52,5 @@ if __name__ == "__main__":
             traceback.print_exc()
         else:
             print("Error running '%s'" % args[0])
+            print("Message: {0}".format(e.message))
             exit(1)

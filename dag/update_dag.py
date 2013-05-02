@@ -64,7 +64,10 @@ def stage_files(root_dag,proc):
     if root_dag.engine == Engine.BOINC:
         import dag.boinc
         dag.boinc.stage_files(proc)
-    elif root_dag.engine != Engine.LSF:
+    elif root_dag.engine == Engine.LSF:
+        import dag.lsf
+        dag.lsf.stage_files(proc)
+    else:
         from dag import DagException
         raise DagException("Invalid engine id: %d" % root_dag.engine)
 
@@ -234,7 +237,9 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
         count_only = False
         if "--count" in  cmd_args:
             count_only = True
-
+            
+        if not cmd_args:
+            raise dag.DagException("Missing state name.")
         states_to_view = cmd_args[0]
         if states_to_view == "all":
             states_to_view = ",".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)])

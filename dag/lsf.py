@@ -18,19 +18,12 @@ class JobSubmitFailed(DagException):
 class BjobsFailed(DagException):
     pass
 
-def create_work(the_dag,dagfile, show_progress = False):
-     """
-     Creates a workunit by processing the dag and running stage_files and schedule_work.
-
-     Sets the workunit information in the dag.Process objects
-
-     Arguments: dag and dagfile path to dag file
-     Returns: no value
-     Throws Exception if an input file does not exist and is not part of a parent process.
-     """
-
+def stage_files(proc,source_dir = None, set_grp_perms = True, overwrite = True):
      def get_command_string(proc):
          retval = proc.executable_name
+         if proc.input_files:
+             retval += " "
+             retval += " ".join([f.full_path() for f in proc.input_files])
          if proc.args:
              retval += " " + proc.args
          return retval
@@ -44,35 +37,58 @@ def create_work(the_dag,dagfile, show_progress = False):
          if not OP.isfile(filename):
              with open(filename,"w") as script_file:
                  script_file.write("#BSUB -J %s\n" % proc.workunit_name)
-                 script_file.write("#BSUB -P %s\n" % proc.project_name)
-                 script_file.write("#BSUB -app %s\n" % proc.application_profile)
+                 if hasattr(proc,"project_name"):
+                     script_file.write("#BSUB -P %s\n" % proc.project_name)
+                 if hasattr(proc,"application_profile"):
+                     script_file.write("#BSUB -app %s\n" % proc.application_profile)
                  script_file.write("#BSUB -eo {0}.err -oo {0}.out\n".format(proc.workunit_name))
                  if hasattr(proc,"rsc_memory_bound"):
                      if proc.rsc_memory_bound:
                          inmeg = int(proc.rsc_memory_bound//(1024.**2))
                          script_file.write('#BSUB -R "rusage[mem={0}]" -M {0}\n'.format(inmeg))
+                 if hasattr(proc,"nproc"):
+                     if proc.nproc > 1:
+                         nproc = int(proc.nproc)
+                         script_file.write('#BSUB -n {0}'.format(nproc))
                  script_file.write("\n%s\n" % command)
 
      import dag
-     import subprocess
 
-     proc = the_dag.processes[0]
      cmd = get_command_string(proc)
      make_bsub(cmd,proc)
+                                           
 
-     retval = subprocess.call("bsub < %s.bsub" % proc.workunit_name,shell=True)
+def create_work(the_dag,dagfile, show_progress = False):
+     """
+     Creates a workunit by processing the dag and running stage_files and schedule_work.
 
-     if retval:
-         from os.path import join
-         from os import getcwd
-         filename = join(getcwd,"{0}.bsub".format(proc.workunit_name))
-         raise JobSubmitFailed("Could not submit job. Bsub script name: {0}.bsub".format(filename))
+     Sets the workunit information in the dag.Process objects
 
-     retval = subprocess.call('bsub -w "ended({0})" -J {0}_notifier -app python-2.7.2 update_dag update {0}'.format(proc.workunit_name),shell=True)
+     Arguments: dag and dagfile path to dag file
+     Returns: no value
+     Throws Exception if an input file does not exist and is not part of a parent process.
+     """
+     import dag
+     import subprocess
 
-     proc.state = dag.States.RUNNING
-     the_dag.save()
-    
+     for proc in the_dag.processes:
+         if proc.state not in [dag.States.CREATED,dag.States.STAGED]:
+             return
+         if not proc.workunit_name:
+             stage_files(proc)
+         retval = subprocess.call("bsub < %s.bsub" % proc.workunit_name,shell=True)
+
+         if retval:
+             from os.path import join
+             from os import getcwd
+             filename = join(getcwd(),"{0}.bsub".format(proc.workunit_name))
+             raise JobSubmitFailed("Could not submit job. Bsub script name: {0}.bsub".format(filename))
+
+         retval = subprocess.call('bsub -w "ended({0})" -J {0}_notifier -app python-2.7.2 update_dag update {0}'.format(proc.workunit_name),shell=True)
+
+         proc.state = dag.States.RUNNING
+         the_dag.save()
+
 
 def clean_workunit(root_dag, proc):
     raise Exception("ADD CLEAN FUNCTION!!!!")

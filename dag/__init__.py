@@ -179,6 +179,10 @@ class Process:
             if i.logical_name and i.logical_name != i.physical_name:
                 file_list[-1] += " (%s)" % i.logical_name
         retval += "\nState: %s(%d)" % (strstate(self.state),self.state)
+        if self.rsc_memory_bound:
+            retval += "\nMemory Limit: {0}".format(self.rsc_memory_bound)
+        if self.rsc_fpops_bound:
+            retval += "\nFloating Point Op Limit: {0}".format(self.rsc_fpops_bound)
         retval += "\nInput: " + ", ".join(file_list)
         file_list = []
         for i in self.output_files:
