@@ -96,7 +96,7 @@ def update_state(cmd_args, root_dag, debug):
             from dag import DagException
             raise DagException("For BOINC, a state name is needed to run update")
         new_state = cmd_args[1]
-        proc.state = intstate(new_state)
+        proc.state = dag.intstate(new_state)
         root_dag.save()
     elif root_dag.engine == Engine.LSF:
         from lsf import get_state
