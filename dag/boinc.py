@@ -145,8 +145,12 @@ def stage_files(proc,source_dir = None, set_grp_perms = True, overwrite = True):
 
     import boinctools
     import os.path as OP
+    from dag import GridProcess
     
     unique_names = {}
+
+    if not isinstance(proc,GridProcess):
+        return
 
     if not source_dir:
         from os import getcwd
@@ -338,39 +342,45 @@ def create_work(the_dag,dagfile, show_progress = False):
         if not proc.workunit_name:
             proc.workunit_name = "%s-%09d" % (proc.cmd,int(random.random()*1000000000))
         #setup workunit templates
-        wu_tmpl = proc.workunit_template
-        if wu_tmpl == None or not OP.isfile(wu_tmpl.physical_name):
-            wu_tmpl = create_workunit_template(proc)
-            OP.os.chmod(wu_tmpl.full_path(),stat.S_IROTH | stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
-        res_tmpl = proc.result_template
-        if res_tmpl == None or not OP.isfile(res_tmpl.physical_name):
-            res_tmpl = create_result_template(proc)
-            OP.os.chmod(res_tmpl.full_path(),stat.S_IROTH | stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
-        proc.workunit_template = wu_tmpl # update process objects
-        proc.result_template = res_tmpl
+        if isinstance(proc,dag.GridProcess):
+            wu_tmpl = proc.workunit_template
+            if wu_tmpl == None or not OP.isfile(wu_tmpl.physical_name):
+                wu_tmpl = create_workunit_template(proc)
+                OP.os.chmod(wu_tmpl.full_path(),stat.S_IROTH | stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
+            res_tmpl = proc.result_template
+            if res_tmpl == None or not OP.isfile(res_tmpl.physical_name):
+                res_tmpl = create_result_template(proc)
+                OP.os.chmod(res_tmpl.full_path(),stat.S_IROTH | stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP)
+            proc.workunit_template = wu_tmpl # update process objects
+            proc.result_template = res_tmpl
 
-        for input in proc.input_files: # validate input files
-            if input in the_dag.graph.keys():
-                for parent_proc in the_dag.graph[input]:
-                    parent_proc.children.append(proc)
-                    defer = True
-                continue # input file loop
-            if not OP.isfile(input.full_path()):
-                print("Missing input file not produced by other process: \"%s\"" % input.physical_name)
-                print("Have the following files:")
-                for i in the_dag.graph.keys():
-                    print("%s (%s)" % (i.physical_name, i.logical_name))
-                raise dag.DagException("Missing File")
+        
+        if the_dag.incomplete_prereqs(proc):
+            print("Missing input file not produced by other process: \"%s\"" % input.physical_name)
+            print("Have the following files:")
+            for i in the_dag.graph.keys():
+                print("%s (%s)" % (i.physical_name, i.logical_name))
+            raise dag.DagException("Missing File")
+        
                 
         if defer:
-            print("Deferring %s" % proc.cmd)
             continue
         # Job not deferred. Run it!
-        stage_files(proc)
-        proc.state = dag.States.STAGED
-        the_dag.save()
-        schedule_work(proc,dagfile)
-        proc.state = dag.States.RUNNING
+        if isinstance(proc,dag.GridProcess):
+            stage_files(proc)
+            proc.state = dag.States.STAGED
+            the_dag.save()
+            schedule_work(proc,dagfile)
+            proc.state = dag.States.RUNNING
+        else:
+            try:
+                proc.start()
+                proc.state = dag.States.SUCCESS
+            except Exception as e:
+                proc.state = dag.States.FAIL
+                the_dag.save()
+                raise e
+            
         the_dag.save()
 
     # Restore use of line returns from progress bar

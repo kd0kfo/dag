@@ -12,6 +12,35 @@ This python module provides interface between BOINC C API and Python user code.
 import dag
 import dag.util as dag_utils
 
+internal_counter = 0
+def preprocess_line(line,parser_kmap):
+    processes = [] # Extra processes that may be added to the DAG
+    if line[0:7] == "#define":
+        kmap_tokens = line.split()
+        if not kmap_tokens or len(kmap_tokens) < 2:
+            raise dag.DagException("Invalid define line.\nExpected:\n#define key [value]\nReceived:\n{0}".format(line))
+        if len(kmap_tokens) == 2:
+            parser_kmap[kmap_tokens[1]] = True
+        else:
+            parser_kmap[kmap_tokens[1]] = kmap_tokens[2:]
+    elif line[0:7] == "#python":
+        from dag import InternalProcess,File
+        import re
+        global internal_counter
+        list_syntax = "\[([^\[\]]*)\]"
+        match = re.search("#python\s*{0}\s*{0}\s(.*)$".format(list_syntax),line)
+        if not match or len(match.groups()) != 3:
+            raise dag.DagException("Invalid python line.\nRequire: input file list, output file list and python code.")
+        params = match.groups()
+        proc = InternalProcess(params[2].strip())
+        proc.input_files = [File(f) for f in params[0].split(',') if f]
+        proc.output_files = [File(f) for f in params[1].split(',') if f]
+        proc.workunit_name = "internal-{0}".format(internal_counter)
+        internal_counter += 1
+        processes.append(proc)
+            
+    return (parser_kmap, processes)
+
 def create_dag(input_filename, parsers, init_file = None):
     """
     Takes an input file that contains a list of commands and generates a dag.
@@ -42,20 +71,16 @@ def create_dag(input_filename, parsers, init_file = None):
 
     root_dag = dag.DAG()
     parser_kmap = {} # used as the second argument of parser functions (below)
-    with open(input_filename,"rb") as infile:
+    with open(input_filename,"r") as infile:
         for line in infile:
             line = line.strip()
             if len(line) == 0:
                 continue
             if line[0] == '#':
-                if line[0:7] == "#define":
-                    kmap_tokens = line.split()
-                    if not kmap_tokens or len(kmap_tokens) < 2:
-                        dag.DagException("Invalid define line.\nExpected:\n#define key [value]\nReceived:\n{0}".format(line))
-                    if len(kmap_tokens) == 2:
-                        parser_kmap[kmap_tokens[1]] = True
-                    else:
-                        parser_kmap[kmap_tokens[1]] = kmap_tokens[2:]
+                print("PREPROCESSING {0}".format(line[0:7]))
+                (parser_kmap, extra_processes) = preprocess_line(line,parser_kmap)
+                for extra_proc in extra_processes:
+                    root_dag.add_process(extra_proc)
                 continue
             tokens = line.split(' ')
             for token in tokens:
@@ -88,12 +113,15 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
     workunites that are ready to be run are submitted to the scheduler.
     
     Lines beginning with '#' are considered directives for gsub itself.
-    Current gsub directives are: #define
+    Current gsub directives are: #define, #python
     If '#' is followed by something other than the directive, 
     the line is ignored.
+    
     #define lines are passed to the parser function using a dict 
     as the second argument, which maps the first string in the line 
     (after #define) to the remain lines (as a list of strings).
+    
+    #python lines are interpreted by the python interpreter.
     
     @param input_filename: filename of commands to be parsed
     @type input_filename: String

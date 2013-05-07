@@ -72,7 +72,10 @@ def stage_files(root_dag,proc):
         raise DagException("Invalid engine id: %d" % root_dag.engine)
 
 def schedule_work(root_dag,proc,dagfile):
-    from dag import Engine
+    from dag import Engine,States,InternalProcess
+    if isinstance(proc,InternalProcess):
+        proc.start()
+        return
     if root_dag.engine == Engine.BOINC:
         import dag.boinc
         dag.boinc.schedule_work(proc,dagfile)
@@ -195,7 +198,10 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
                     if root_dag.incomplete_prereqs(proc):
                         raise Exception("Cannot start %s. Missing dependencies.")
                     schedule_work(root_dag,proc,dagfile)
-                    proc.state = dag.States.RUNNING
+                    if isinstance(proc,dag.InternalProcess):
+                        proc.state = dag.States.SUCCESS
+                    else:
+                        proc.state = dag.States.RUNNING
 
             #save dag
             root_dag.save(dagfile)

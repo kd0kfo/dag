@@ -152,11 +152,39 @@ class File:
         return os.path.join(self.dir,self.physical_name)
         
 
-class Process:
+class Process(object):
+    def __init__(self):
+        self.input_files = []
+        self.output_files = []
+        self.state = States.CREATED
+        self.children = []
+        self.temp_files = []
+        
+    
+    def __str__(self):
+        raise DagException("String function must be overloaded classes that extend dag.Process")
+    
+    def start(self):
+        raise DagException("start function must be overloaded classes that extend dag.Process")
+
+class InternalProcess(Process):
+    def __init__(self,command):
+        super(InternalProcess,self).__init__()
+        self.cmd = command
+        
+    def __str__(self):
+        return "Command: {0}".format(self.cmd)
+    
+    def start(self):
+        retval = eval(compile(self.cmd,self.workunit_name,'exec'))
+        return retval
+    
+class GridProcess(Process):
     """
     Process is an abstraction of work units.
     """
     def __init__(self,cmd,input_files, output_files,arguments, rsc_fpops_est = 10**10, rsc_fpops_bound = 10**11, rsc_memory_bound = 536870912):
+        super(GridProcess,self).__init__()
         self.cmd = cmd
         self.input_files = input_files
         self.output_files = output_files
@@ -345,8 +373,10 @@ DAG is a directed acyclic graph. It stores a list of processes (nodes in the gra
                 for i in proc_prereqs:
                     if isinstance(i,File):
                         retval += "File: %s\n" % i.logical_name
-                    elif isinstance(i,Process):
+                    elif isinstance(i,GridProcess):
                         retval += "Process: %s\n" % i.workunit_name
+                    elif isinstance(i,InternalProcess):
+                        retval += "Python Code\n"
                     else:
                         retval += "%s\n" % i
             retval += "\n\n"
