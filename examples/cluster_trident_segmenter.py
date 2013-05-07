@@ -84,6 +84,7 @@ def parse(args,kmap = {}):
     rsc_memory_limit = default_memory_limit
     app_profile = None
     project_name = None
+    chunk_size = default_chunk_size
     if 'assembly' in kmap:
         header_map['assembly'] = " ".join(kmap['assembly'])
         print("Labeling Assembly: {0}".format(header_map['assembly']))
@@ -99,6 +100,8 @@ def parse(args,kmap = {}):
         app_profile = kmap['app'][0]
     if 'project_name' in kmap:
         project_name = kmap['project_name'][0]
+    if 'chunk_size' in kmap:
+        chunk_size = int(kmap['chunk_size'][0])
 
     mirna = args[0]
     dna = args[1]
@@ -112,7 +115,6 @@ def parse(args,kmap = {}):
 
     num_files = 1
     if OP.isfile(dna):
-        chunk_size = default_chunk_size
         if "-sc" in args:
             for i in range(0,len(args)):
                 if args[i] == "-sc":
@@ -140,6 +142,8 @@ def parse(args,kmap = {}):
         proc = TridentInstance(mirna,dna,strargs)
         proc.rsc_memory_limit = rsc_memory_limit
         proc.executable_name = "trident.centos6.1"
+        if project_name:
+            proc.project_name = project_name
         if app_profile:
             proc.application_profile = app_profile
         if not have_output:
