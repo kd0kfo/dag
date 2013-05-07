@@ -7,6 +7,7 @@ def print_usage():
     print("Usage: gsub [options] <filename>")
     print("Options:")
     print("-d, --dagfile FILE\tSpecify DAG file to be used. Default: jobs.dag")
+    print("-e, --engine STRING\tName of job batch type. Default: BOINC")
     print("-i, --init FILE\t\tSpecify input file to be used. Default: $HOME/.boincdag")
     print("-s, --setup_only\t\tSetup the DAG, but do not stage and run jobs. Default: off")
     print("-v, --version\t\tPrint version info.")
@@ -14,18 +15,29 @@ def print_usage():
 if __name__ == "__main__":
     from sys import argv
     from getopt import getopt
+    from dag import Engine,enum2string,string2enum
 
     init_filename = None
     dagfilename = dag.DEFAULT_DAGFILE_NAME
     start_jobs = True
     
-    (optlist,args) = getopt(argv[1:],'d:hi:sv',['dagfile=','help','init=','setup_only','version'])
+    (optlist,args) = getopt(argv[1:],'d:e:hi:sv',['dagfile=','engine=','help','init=','setup_only','version'])
 
+    engine = Engine.BOINC
     for (opt,val) in optlist:
         while opt[0] == '-':
             opt = opt[1:]
         if opt in ['d','dagfile']:
             dagfilename = val
+        elif opt in ["e","engine"]:
+            if not val in Engine.__dict__:
+                print("Unknown Engine")
+                engine_list = ""
+                for i in range(0,Engine.NUM_ENGINES):
+                    engine_list += " " + enum2string(Engine,i)
+                print("Acceptable values are:" + engine_list)
+                exit(1)
+            engine = string2enum(Engine,val)
         elif opt in ["h","help"]:
             print_usage()
             exit(0)
@@ -46,5 +58,5 @@ if __name__ == "__main__":
         print_usage()
         exit(1)
         
-    if gsub.gsub(args[0],start_jobs,dagfilename,init_filename) == None:
+    if gsub.gsub(args[0],start_jobs,dagfilename,init_filename,engine = engine) == None:
         exit(1)

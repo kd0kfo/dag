@@ -17,11 +17,13 @@ command_help = {
     "list": "Lists all processes.",
     "print": "Print information about a process. If a workunit name is not given, all processes are listed.",
     "recreate": "Regenerates specified temporary files. Options are: 'result_template'",
+    "reset": "Clears generated values, such as workunit name, and moves process to CREATED state.",
     "remove": "Removes a workunit. 'all' can be supplied instead of a workunit name to remove ALL of the workunits.",
     "run": "Stars a specific process, by workunit name. This should be run after 'stage'",
     "stage": "Copies necessary files to their required locations on the server.",
     "start": "Starts ALL processes",
-    "state": "Prints processes in a given state. The optional \"--count\" flag may be used to show only a count of the number of processes in that state. States are: {0}".format(", ".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)]))
+    "state": "Prints processes in a given state. The optional \"--count\" flag may be used to show only a count of the number of processes in that state. States are: {0}".format(", ".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)])),
+    "update": "Update the state of a workunit."
     
     }
 
@@ -33,6 +35,77 @@ def print_help(command = None):
         return
     print("%s -- %s" % (command,command_help[command]))
 
+def create_work(root_dag,dagpath,show_progress):
+    from dag import Engine
+    if root_dag.engine == Engine.BOINC:
+        import dag.boinc
+        dag.boinc.create_work(root_dag,dagpath,show_progress)
+    elif root_dag.engine == Engine.LSF:
+        import dag.lsf
+        dag.lsf.create_work(root_dag,dagpath,show_progress)
+    else:
+        from dag import DagException
+        raise DagException("Invalid engine id: %d" % root_dag.engine)    
+
+def clean_workunit(root_dag,proc):
+    from dag import Engine
+    if root_dag.engine == Engine.BOINC:
+        import dag.boinc
+        dag.boinc.clean_workunit(root_dag,proc)
+    elif root_dag.engine == Engine.LSF:
+        import dag.lsf
+        dag.lsf.clean_workunit(root_dag,proc)
+    else:
+        from dag import DagException
+        raise DagException("Invalid engine id: %d" % root_dag.engine)
+
+def stage_files(root_dag,proc):
+    from dag import Engine
+    if root_dag.engine == Engine.BOINC:
+        import dag.boinc
+        dag.boinc.stage_files(proc)
+    elif root_dag.engine == Engine.LSF:
+        import dag.lsf
+        dag.lsf.stage_files(proc)
+    else:
+        from dag import DagException
+        raise DagException("Invalid engine id: %d" % root_dag.engine)
+
+def schedule_work(root_dag,proc,dagfile):
+    from dag import Engine
+    if root_dag.engine == Engine.BOINC:
+        import dag.boinc
+        dag.boinc.schedule_work(proc,dagfile)
+    elif root_dag.engine != Engine.LSF:
+        from dag import DagException
+        raise DagException("Invalid engine id: %d" % root_dag.engine)
+
+def update_state(cmd_args, root_dag, debug):
+    from dag import Engine
+    if not cmd_args:
+        from dag import DagException
+        raise DagException("Missing workunit name for update.")
+
+    proc = root_dag.get_process(cmd_args[0])
+    if not proc:
+        from dag import DagException
+        raise DagException("{0} not found in workunit list.".format(cmd_args))
+
+    if root_dag.engine == Engine.BOINC:
+        if len(cmd_args) < 2:
+            from dag import DagException
+            raise DagException("For BOINC, a state name is needed to run update")
+        new_state = cmd_args[1]
+        proc.state = intstate(new_state)
+        root_dag.save()
+    elif root_dag.engine == Engine.LSF:
+        from lsf import get_state
+        proc.state = get_state(proc)
+        root_dag.save()
+    else:
+        from dag import DagException
+        raise DagException("Invalid engine id: %d" % root_dag.engine)
+        
 
 def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
     """
@@ -56,6 +129,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
     # if the dag is needed (probably), load it.
     root_dag = None
     if needs_dagfile(cmd):
+        import dag
         if not OP.isfile(dagfile):
             raise Exception("Could not open '%s'" % dagfile)
         root_dag = dag.load(dagfile)
@@ -97,7 +171,7 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
                     for proc in root_dag.processes:
                         if debug:
                             print("Removing %s" % proc.workunit_name)
-                        dag.boinc.clean_workunit(root_dag,proc)
+                        clean_workunit(root_dag,proc)
                         count += 1
                         if progress_bar:
                             progress_bar.update(count)
@@ -107,46 +181,65 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
                 else:
                     if debug:
                         print("Removing %s" % wuname)
-                    dag.boinc.clean_workunit(root_dag,proc)
+                    clean_workunit(root_dag,proc)
                     root_dag.processes.remove(proc)# remove process
 
 
             if cmd in ["run","stage"]:
                 print("Staging %s" % wuname)
-                dag.boinc.stage_files(proc)
+                stage_files(root_dag,proc)
                 if proc.state == dag.States.CREATED:
                     proc.state = dag.States.STAGED
                 if cmd == "run":
                     print("Starting %s" % wuname)
                     if root_dag.incomplete_prereqs(proc):
                         raise Exception("Cannot start %s. Missing dependencies.")
-                    dag.boinc.schedule_work(proc,dagfile)
+                    schedule_work(root_dag,proc,dagfile)
                     proc.state = dag.States.RUNNING
 
             #save dag
             root_dag.save(dagfile)
             print("updated dagfile")
     elif cmd == "start":
-        dag.boinc.create_work(root_dag,OP.abspath(dagfile),True)
+        create_work(root_dag,OP.abspath(dagfile),True)
         root_dag.save(dagfile)
     elif cmd == "recreate":
         if not cmd_args:
             raise Exception("recreate requires a specific file type to recreate.")
         if cmd_args[0] == "result_template":
+            if root_dag.engine != dag.Engine.BOINC:
+                raise dag.DagException("Can only make result template with BOINC jobs.")
+            import dag.boinc
             proc = root_dag.get_process(cmd_args[1])
             dag.boinc.create_result_template(proc,proc.result_template.full_path())
             print("Created result template")
         else:
             print("Do not know how to recreate: '%s'" % cmd_args[0])
+    elif cmd == "reset":
+        for wuname in cmd_args:
+            proc = root_dag.get_process(wuname)
+            clean_workunit(root_dag,proc)
+            proc.workunit_name = None
+            proc.workunit_template = None
+            proc.result_template = None
+            proc.state = dag.States.CREATED
+            root_dag.save()
     elif cmd == "cancel":
+        if root_dag.engine != dag.Engine.BOINC:
+            raise dag.DagException("Can only cancel BOINC jobs.")
+        import dag.boinc
         proc_list = [root_dag.get_process(wuname) for wuname in cmd_args]
         dag.boinc.cancel_workunits(proc_list)
         root_dag.save()
+    elif cmd == "update":
+        update_state(cmd_args,root_dag,debug)
     elif cmd == "state":
         count_only = False
         if "--count" in  cmd_args:
             count_only = True
-
+            
+        if not cmd_args:
+            raise dag.DagException("Missing state name.")
         states_to_view = cmd_args[0]
         if states_to_view == "all":
             states_to_view = ",".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)])

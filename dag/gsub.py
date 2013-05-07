@@ -81,7 +81,7 @@ def create_dag(input_filename, parsers, init_file = None):
     return root_dag
 
 
-def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,init_filename=None):
+def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,init_filename=None,engine=dag.Engine.BOINC):
     """
     Reads a file containing a list of commands and parses them
     into workunits to be run on the grid. if start_jobs is true,
@@ -130,7 +130,7 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
     root_dag = create_dag(input_filename,parsers,init_file)
     if root_dag is None:
         raise dag.DagException("Could not create DAG using submission file %s" % input)
-
+    root_dag.engine = engine
     save_dag(root_dag,dagfile)
     
     # Check to see if the directory is writable. If not, issue warning.
@@ -145,8 +145,13 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
     
     abs_dag_path = OP.abspath(dagfile)
     try:
-        import dag.boinc
-        dag.boinc.create_work(root_dag,abs_dag_path,True)
+        import dag
+        if root_dag.engine == dag.Engine.BOINC:
+            import dag.boinc
+            dag.boinc.create_work(root_dag,abs_dag_path,True)
+        elif root_dag.engine == dag.Engine.LSF:
+            import dag.lsf
+            dag.lsf.create_work(root_dag,abs_dag_path, True)
     except Exception as e:
         import traceback
         print("Exception thrown creating work")

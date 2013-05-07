@@ -26,7 +26,41 @@ def enum(*sequential,**vals):
     the_enums = dict(zip(sequential, range(len(sequential))), **vals)
     return type('Enumeration',(),the_enums)
 
+Engine = enum('BOINC','LSF','NUM_ENGINES')
 States = enum('CREATED','STAGED','RUNNING','SUCCESS','FAIL','NUM_STATES')
+def enum2string(enum,val):
+    """
+    Looks up the given integer and provides the string representation within the enum. If there is not name for the provided integer, None is returned.
+
+    @param enum: Enum to be searched
+    @ptype enum: enum
+    @param val: Integer to be found
+    @ptype val: int
+    @return: Name of enum value
+    @rtype: str
+    """
+    for i in dir(enum):
+        if getattr(enum,i) == val:
+            return i
+    return None
+
+def string2enum(enum,string):
+    """
+    Translates an string name for a value in an enum to the integer value of the enum.
+
+    Returns None if the string is not a valid value.
+
+    @param enum: enum to search
+    @ptype enum: enum
+    @param string: String value of enum int
+    @ptype string: str
+    @rtype: int
+    @return: Enum value
+    """
+    if not string in enum.__dict__:
+        return None
+    return int(enum.__dict__[string])
+
 def strstate(state):
     """
     Translates a state integer value to a String name
@@ -38,9 +72,9 @@ def strstate(state):
     """
     if state == None:
         return 'None'
-    for i in dir(States):
-        if getattr(States,i) == state:
-            return i
+    string = enum2string(States,state)               
+    if string:
+        return string
     return 'UNKNOWN'
 
 def intstate(state):
@@ -54,9 +88,9 @@ def intstate(state):
     @rtype: int
     @return: State enum value
     """
-    if state == "NUM_STATES" or not state in States.__dict__:
+    if state == "NUM_STATES":
         return None
-    return int(States.__dict__[state])
+    return string2enum(States,state)
 
 class File:
     """
@@ -145,6 +179,10 @@ class Process:
             if i.logical_name and i.logical_name != i.physical_name:
                 file_list[-1] += " (%s)" % i.logical_name
         retval += "\nState: %s(%d)" % (strstate(self.state),self.state)
+        if self.rsc_memory_bound:
+            retval += "\nMemory Limit: {0}".format(self.rsc_memory_bound)
+        if self.rsc_fpops_bound:
+            retval += "\nFloating Point Op Limit: {0}".format(self.rsc_fpops_bound)
         retval += "\nInput: " + ", ".join(file_list)
         file_list = []
         for i in self.output_files:
@@ -188,10 +226,11 @@ class DAG:
     """
 DAG is a directed acyclic graph. It stores a list of processes (nodes in the graph). The Graph class connects nodes by their input/output files.
 """
-    def __init__(self):
+    def __init__(self,engine = Engine.BOINC):
         self.processes = []
         self.graph = Graph()
         self.filename = ""
+        self.engine = engine
 
     def add_process(self,proc):
         self.processes.append(proc)
