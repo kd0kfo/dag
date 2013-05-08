@@ -51,8 +51,8 @@ class TridentInstance:
         for i in SeqIO.parse(self.mirna,"fasta"):
             fpops_est += default_fpops_est
         
-        input = [dag.File(self.mirna),dag.File(self.dna)]
-        for infile in input:
+        infiles = [dag.File(self.mirna),dag.File(self.dna)]
+        for infile in infiles:
             if "segmented" in infile.physical_name:
                 infile.temp_file = True
                 infile.dir = OP.abspath(infile.dir)
@@ -61,7 +61,7 @@ class TridentInstance:
             match = re.findall("-out\s*(\S*)",self.args)
             if match:
                 output.append(dag.File(match[0],max_nbytes=100e9))
-        retval = dag.Process("trident",input,output,arguments = self.args,rsc_fpops_est = fpops_est,rsc_fpops_bound = fpops_est*5,rsc_memory_bound = self.rsc_memory_limit)
+        retval = dag.GridProcess("trident",infiles,output,arguments = self.args,rsc_fpops_est = fpops_est,rsc_fpops_bound = fpops_est*5,rsc_memory_bound = self.rsc_memory_limit)
         retval.executable_name = self.executable_name
         if hasattr(self,"application_profile"):
             retval.application_profile = self.application_profile
