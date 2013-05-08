@@ -28,7 +28,7 @@ def unique_input_name(proc, file):
     @return: Unique file name
     """    
     import os.path as OP
-    return "%s-%s" % (proc.workunit_name, file.physical_name)
+    return "%s-%s" % (proc.get_unique_name(), file.physical_name)
 
 def create_workunit_template(proc):
     """
@@ -299,7 +299,7 @@ def schedule_work(proc, dag_path):
     wu_tmpl = OP.split(proc.workunit_template.physical_name)[1]
     res_tmpl = OP.split(proc.result_template.physical_name)[1]
     input_filenames = [unique_input_name(proc,input) for input in proc.input_files]
-    boinctools.schedule_work(proc.cmd,proc.workunit_name,wu_tmpl,res_tmpl,input_filenames)
+    boinctools.schedule_work(proc.cmd,proc.get_unique_name(),wu_tmpl,res_tmpl,input_filenames)
     make_dag_marker(proc.workunit_name,dag_path)
 
 def create_work(the_dag,dagfile, show_progress = False):
