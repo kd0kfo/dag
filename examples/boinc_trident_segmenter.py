@@ -50,8 +50,8 @@ class TridentInstance:
         for i in SeqIO.parse(self.mirna,"fasta"):
             fpops_est += default_fpops_est
         
-        input = [dag.File(self.mirna),dag.File(self.dna)]
-        for infile in input:
+        infiles = [dag.File(self.mirna),dag.File(self.dna)]
+        for infile in infiles:
             if "segmented" in infile.physical_name:
                 infile.temp_file = True
                 infile.dir = OP.abspath(infile.dir)
@@ -61,14 +61,13 @@ class TridentInstance:
             if match:
                 output.append(dag.File(match[0],max_nbytes=250e6))
         input.append(self.create_job_xml())
-        return dag.Process("trident",input,output,arguments = self.args,rsc_fpops_est = fpops_est,rsc_fpops_bound = fpops_est*5,deadline = default_deadline)
+        return dag.GridProcess("trident",infiles,output,arguments = self.args,rsc_fpops_est = fpops_est,rsc_fpops_bound = fpops_est*5,deadline = default_deadline)
 
 
 def parse(args,kmap = {}):
     import os.path as OP
-    import getopt
     from trident import chromosome_chopper as chopper
-
+    
     if len(args) < 2:
         print("trident processes require at least two filenames")
         return None
