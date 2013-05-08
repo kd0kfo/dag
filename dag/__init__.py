@@ -194,8 +194,7 @@ class GridProcess(Process):
     """
     Process is an abstraction of work units.
     """
-    def __init__(self,cmd,input_files, output_files,arguments, rsc_fpops_est = 10**10, rsc_fpops_bound = 10**11, rsc_memory_bound = 536870912):
-        super(GridProcess,self).__init__()
+    def __init__(self,cmd,input_files, output_files,arguments, rsc_fpops_est = 10**10, rsc_fpops_bound = 10**11, rsc_memory_bound = 536870912,deadline = None):
         self.cmd = cmd
         self.input_files = input_files
         self.output_files = output_files
@@ -209,9 +208,13 @@ class GridProcess(Process):
         self.rsc_fpops_est = rsc_fpops_est
         self.rsc_fpops_bound = rsc_fpops_bound
         self.rsc_memory_bound = rsc_memory_bound
+        if deadline:
+            self.deadline = int(deadline)
+        else:
+            self.deadline = None
         
     def __str__(self):
-        retval = str(self.cmd)
+        retval = "{0}\n".format(self.cmd)
         file_list = []
         for i in self.input_files:
             file_list.append(i.physical_name)
@@ -222,21 +225,25 @@ class GridProcess(Process):
             retval += "\nMemory Limit: {0}".format(self.rsc_memory_bound)
         if self.rsc_fpops_bound:
             retval += "\nFloating Point Op Limit: {0}".format(self.rsc_fpops_bound)
-        retval += "\nInput: " + ", ".join(file_list)
+        retval += "State: %s(%d)\n" % (strstate(self.state),self.state)
+        if hasattr(self,"deadline") and self.deadline:
+            retval += "Deadline (hours): {0}\n".format(self.deadline/3600) # Convert to hours
+        retval += "Input: "
         file_list = []
         for i in self.output_files:
             file_list.append(i.physical_name)
             if i.logical_name and i.logical_name != i.physical_name:
                 file_list[-1] += " (%s)" % i.logical_name
-        retval += "\nOutput: " + ", ".join(file_list)
+        retval += "\n"
+        retval += "Output: " + ", ".join(file_list) + "\n"
         if self.workunit_name:
-            retval += "\n%s: %s" % ("Workunit Name",self.workunit_name)
+            retval += "%s: %s\n" % ("Workunit Name",self.workunit_name)
         if self.workunit_template and self.workunit_template.physical_name:
-            retval += "\n%s: %s" % ("Workunit Template", self.workunit_template.physical_name)
+            retval += "%s: %s\n" % ("Workunit Template", self.workunit_template.physical_name)
         if self.result_template and self.result_template.physical_name:
-            retval += "\n%s: %s" % ("Result Template", self.result_template.physical_name)
-        retval += "\nargs: %s\n" % self.args
-        retval += "\nChildren:\n"
+            retval += "%s: %s\n" % ("Result Template", self.result_template.physical_name)
+        retval += "args: %s\n" % self.args
+        retval += "Children:\n"
         for i in self.children:
             retval += "%s(%s) " % (i.workunit_name, i.cmd)
         return retval
