@@ -77,7 +77,6 @@ def create_dag(input_filename, parsers, init_file = None):
             if len(line) == 0:
                 continue
             if line[0] == '#':
-                print("PREPROCESSING {0}".format(line[0:7]))
                 (parser_kmap, extra_processes) = preprocess_line(line,parser_kmap)
                 for extra_proc in extra_processes:
                     root_dag.add_process(extra_proc)
