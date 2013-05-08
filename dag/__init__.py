@@ -154,11 +154,13 @@ class File:
 
 class Process(object):
     def __init__(self):
+        import uuid
         self.input_files = []
         self.output_files = []
         self.state = States.CREATED
         self.children = []
         self.temp_files = []
+        self.uuid = uuid.uuid4()
         
     
     def __str__(self):
@@ -166,6 +168,15 @@ class Process(object):
     
     def start(self):
         raise DagException("start function must be overloaded classes that extend dag.Process")
+    
+    def get_unique_name(self):
+        """
+        Returns the UUID of the process as a String.
+        
+        @return: UUID
+        @type: str
+        """
+        return str(self.uuid)
 
 class InternalProcess(Process):
     def __init__(self,command):
