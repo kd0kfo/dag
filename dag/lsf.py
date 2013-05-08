@@ -62,7 +62,7 @@ def create_work(the_dag,dagfile, show_progress = False):
      """
      Creates a workunit by processing the dag and running stage_files and schedule_work.
 
-     Sets the workunit information in the dag.Process objects
+     Sets the workunit information in the dag.GridProcess objects
 
      Arguments: dag and dagfile path to dag file
      Returns: no value
