@@ -180,12 +180,13 @@ class Process(object):
     
     def clean_temp_files(self):
         """
-        Removes files listed in temp_files.
+        Removes files listed in temp_files and input_files that are listed as temporary.
         
         Calls File.unlink()
         """
-        for f in self.temp_files:
-            f.unlink()
+        for f in self.temp_files + self.input_files:
+            if f.temp_file:
+                f.unlink()
 
 class InternalProcess(Process):
     def __init__(self,command):
