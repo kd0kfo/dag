@@ -190,11 +190,20 @@ class InternalProcess(Process):
         retval = eval(compile(self.cmd,self.workunit_name,'exec'))
         return retval
     
+def make_file_list(files):
+    file_list = []
+    for i in files:
+        file_list.append(i.physical_name)
+        if i.logical_name and i.logical_name != i.physical_name:
+            file_list[-1] += " (%s)" % i.logical_name
+    return file_list
+        
 class GridProcess(Process):
     """
     Process is an abstraction of work units.
     """
     def __init__(self,cmd,input_files, output_files,arguments, rsc_fpops_est = 10**10, rsc_fpops_bound = 10**11, rsc_memory_bound = 536870912,deadline = None):
+        super(GridProcess,self).__init__()
         self.cmd = cmd
         self.input_files = input_files
         self.output_files = output_files
@@ -224,18 +233,11 @@ class GridProcess(Process):
         if self.rsc_memory_bound:
             retval += "\nMemory Limit: {0}".format(self.rsc_memory_bound)
         if self.rsc_fpops_bound:
-            retval += "\nFloating Point Op Limit: {0}".format(self.rsc_fpops_bound)
-        retval += "State: %s(%d)\n" % (strstate(self.state),self.state)
+            retval += "\nFloating Point Op Limit: {0}\n".format(self.rsc_fpops_bound)
         if hasattr(self,"deadline") and self.deadline:
             retval += "Deadline (hours): {0}\n".format(self.deadline/3600) # Convert to hours
-        retval += "Input: "
-        file_list = []
-        for i in self.output_files:
-            file_list.append(i.physical_name)
-            if i.logical_name and i.logical_name != i.physical_name:
-                file_list[-1] += " (%s)" % i.logical_name
-        retval += "\n"
-        retval += "Output: " + ", ".join(file_list) + "\n"
+        retval += "Input: {0}\n".format(", ".join(make_file_list(self.input_files)))
+        retval += "Output:{0}\n ".format(", ".join(make_file_list(self.output_files)))
         if self.workunit_name:
             retval += "%s: %s\n" % ("Workunit Name",self.workunit_name)
         if self.workunit_template and self.workunit_template.physical_name:

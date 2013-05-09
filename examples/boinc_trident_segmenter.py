@@ -60,7 +60,7 @@ class TridentInstance:
             match = re.findall("-out\s*(\S*)",self.args)
             if match:
                 output.append(dag.File(match[0],max_nbytes=250e6))
-        input.append(self.create_job_xml())
+        infiles.append(self.create_job_xml())
         return dag.GridProcess("trident",infiles,output,arguments = self.args,rsc_fpops_est = fpops_est,rsc_fpops_bound = fpops_est*5,deadline = default_deadline)
 
 
