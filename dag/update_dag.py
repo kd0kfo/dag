@@ -4,10 +4,10 @@ dag.update_dag
 ==============
 
 @author: David Coss, PhD
-@date: November 7, 2012
+@date: May 9, 2013
 @license: GPL version 3 (see COPYING or http://www.gnu.org/licenses/gpl.html for details)
 
-This python module provides interface between BOINC C API and Python user code.
+Utility function for DAG files.
 """
 import dag
 
@@ -28,6 +28,12 @@ command_help = {
     }
 
 def print_help(command = None):
+    """
+    Prints help for a command using the command_help dict. Help is printed to standard output.
+    
+    @param command: Command for which help is required
+    @type command: str
+    """
     if not command in command_help:
         if command:
             print("Unknown command: %s" % command)
@@ -36,6 +42,17 @@ def print_help(command = None):
     print("%s -- %s" % (command,command_help[command]))
 
 def create_work(root_dag,dagpath,show_progress):
+    """
+    Takes a DAG and starts processes that are able to be started.
+    
+    @param root_dag: DAG to be processed
+    @type root_dag: dag.DAG
+    @param dagpath: Path of DAG file
+    @type dagpath: str
+    @param show_progress: Whether or not a progress bar is desired (if available).
+    @type show_progress: bool
+    @raise dag.DagException: If the root dag contains an invalid engine.
+    """
     from dag import Engine
     if root_dag.engine == Engine.BOINC:
         import dag.boinc
@@ -48,6 +65,15 @@ def create_work(root_dag,dagpath,show_progress):
         raise DagException("Invalid engine id: %d" % root_dag.engine)    
 
 def clean_workunit(root_dag,proc):
+    """
+    Cleans up after a process. Removes temporary files.
+    
+    @param root_dag: DAG
+    @type root_dag: dag.DAG
+    @param proc: Process to be cleaned
+    @type proc: dag.Process
+    @raise dag.DagException: If the root dag contains an invalid engine.
+    """
     from dag import Engine
     if root_dag.engine == Engine.BOINC:
         import dag.boinc
@@ -60,6 +86,15 @@ def clean_workunit(root_dag,proc):
         raise DagException("Invalid engine id: %d" % root_dag.engine)
 
 def stage_files(root_dag,proc):
+    """
+    Creates temporary/intermediate files for a process.
+    
+    @param root_dag: DAG
+    @type root_dag: dag.DAG
+    @param proc: Process to be staged
+    @type proc: dag.Process
+    @raise dag.DagException: If the root dag contains an invalid engine.
+    """
     from dag import Engine
     if root_dag.engine == Engine.BOINC:
         import dag.boinc
@@ -72,7 +107,16 @@ def stage_files(root_dag,proc):
         raise DagException("Invalid engine id: %d" % root_dag.engine)
 
 def schedule_work(root_dag,proc,dagfile):
-    from dag import Engine,States,InternalProcess
+    """
+    Starts or Schedules a process
+    
+    @param root_dag: DAG
+    @type root_dag: dag.DAG
+    @param proc: Process to be scheduled/started
+    @type proc: dag.Process
+    @raise dag.DagException: If the root dag contains an invalid engine.
+    """
+    from dag import Engine,InternalProcess
     if isinstance(proc,InternalProcess):
         proc.start()
         return
@@ -84,6 +128,15 @@ def schedule_work(root_dag,proc,dagfile):
         raise DagException("Invalid engine id: %d" % root_dag.engine)
 
 def update_state(cmd_args, root_dag, debug):
+    """
+    Updates the state of a process.
+    
+    @param cmd_args: Arguments used to do update. Values depend on engine, except for the first value, which is the name of the process.
+    @type cmd_args: list
+    @param root_dag: DAG
+    @type root_dag: dag.DAG
+    @raise dag.DagException: If the root dag contains an invalid engine or if specified proces is not in the DAG.
+    """
     from dag import Engine
     if not cmd_args:
         from dag import DagException
@@ -91,12 +144,10 @@ def update_state(cmd_args, root_dag, debug):
 
     proc = root_dag.get_process(cmd_args[0])
     if not proc:
-        from dag import DagException
         raise DagException("{0} not found in workunit list.".format(cmd_args))
 
     if root_dag.engine == Engine.BOINC:
         if len(cmd_args) < 2:
-            from dag import DagException
             raise DagException("For BOINC, a state name is needed to run update")
         new_state = cmd_args[1]
         proc.state = dag.intstate(new_state)
@@ -106,20 +157,24 @@ def update_state(cmd_args, root_dag, debug):
         proc.state = get_state(proc)
         root_dag.save()
     else:
-        from dag import DagException
         raise DagException("Invalid engine id: %d" % root_dag.engine)
         
 
-def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
+def update_dag(cmd, cmd_args, dagfile = dag.DEFAULT_DAGFILE_NAME, debug = False):
     """
     This is the main forking function that operates on a DAG and its workunits
 
     Arguments: 
-    cmd -- String command to run on DAG
-    cmd_args -- List of string arguments for the specified command
+    @param cmd: Command to run on DAG
+    @type cmd: str
+    @param cmd_args: List of string arguments for the specified command
+    @type cmd_args: list
+    @param dagfile: Optional filename for the DAG to be updated. Default: jobs.dag
+    @type dagfile: str
+    @param debug: Indicate whether or not debugging information is provided, including stack track if an exception is raised. Default: False
+    @type debug: bool
 
-    Returns: No return value
-    Raises Exception if the DAG file is missing or if the command is unknown.
+    @raise Exception: if the DAG file is missing or if the command is unknown.
     """
     from os import path as OP
     
@@ -132,7 +187,6 @@ def update_dag(cmd, cmd_args, dagfile = "jobs.dag", debug = False):
     # if the dag is needed (probably), load it.
     root_dag = None
     if needs_dagfile(cmd):
-        import dag
         if not OP.isfile(dagfile):
             raise Exception("Could not open '%s'" % dagfile)
         root_dag = dag.load(dagfile)

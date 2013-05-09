@@ -3,10 +3,9 @@ dag.utils
 =========
 
 @author: David Coss, PhD
-@date: November 7, 2012
+@date: May 9, 2013
 @license: GPL version 3 (see COPYING or http://www.gnu.org/licenses/gpl.html for details)
 
-This python module provides interface between BOINC C API and Python user code.
 """
 import dag
 
