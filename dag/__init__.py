@@ -9,6 +9,7 @@ dag
 Creates and manages a Directed Acyclic Graph of embarrassingly parallel work units. 
 """
 DEFAULT_DAGFILE_NAME = "jobs.dag"
+DEFAULT_DAG_CONFIG_FILE = ".dagrc"
 
 class DagException(Exception):
     """

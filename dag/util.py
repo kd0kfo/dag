@@ -50,12 +50,13 @@ def dump_traceback(e):
 def open_user_init():
     from os import getenv
     import os.path as OP
+    from dag import DEFAULT_DAG_CONFIG_FILE
 
     file_path = getenv('HOME')
     if not file_path:
         raise dag.DagException("Could not obtain Home Directory variable: $HOME")
 
-    file_path = OP.join(file_path,".boincdag")
+    file_path = OP.join(file_path,DEFAULT_DAG_CONFIG_FILE)
 
     if not OP.isfile(file_path):
         return None

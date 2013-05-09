@@ -167,10 +167,12 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
         try:
             init_file = open(init_filename,"r")
         except IOError as ioe:
-            from sys import stderr
-            stderr.write("Could not read init file '%s'\n" % init_filename)
-            stderr.write("Reason: %s\n" % ioe.stderr)
-            exit(ioe.errno)
+            errmsg = "Could not read init file '%s'\n" % init_filename
+            errmsg += "Reason{0}: {1}\n".format(ioe.errno,ioe.stderr)
+            raise dag.DagException(errmsg)
+    else:
+        from dag.util import open_user_init
+        init_file = open_user_init()
             
     root_dag = create_dag(input_filename,parsers,init_file)
     if root_dag is None:
