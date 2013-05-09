@@ -177,6 +177,7 @@ def update_dag(cmd, cmd_args, dagfile = dag.DEFAULT_DAGFILE_NAME, debug = False)
     @raise Exception: if the DAG file is missing or if the command is unknown.
     """
     from os import path as OP
+    import dag
     
     def needs_dagfile(cmd):
         return cmd not in ["help"]
