@@ -80,7 +80,6 @@ def create_work(the_dag,dagfile):
     @type the_dag: dag.DAG
     @param dagfile: Path to dag file
     @type dagfile: str
-    @param show_progress: Whether or not a progress bar is to be shown. Requires: 
     Returns: no value
     @raise JobSubmitFailed: If an input file does not exist and is not part of a parent process.
     """
