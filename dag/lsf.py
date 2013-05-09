@@ -89,7 +89,7 @@ def create_work(the_dag,dagfile):
     
     for proc in the_dag.processes:
         if proc.state not in [dag.States.CREATED,dag.States.STAGED]:
-            return
+            continue
         if not proc.workunit_name:
             stage_files(proc)
         retval = subprocess.call("bsub < %s.bsub" % proc.workunit_name,shell=True)
