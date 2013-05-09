@@ -91,7 +91,7 @@ def create_work(the_dag,dagfile, show_progress = False):
 
 
 def clean_workunit(root_dag, proc):
-    raise Exception("ADD CLEAN FUNCTION!!!!")
+    proc.clean_temp_files()
 
 def get_state(proc):
     import subprocess as SP
