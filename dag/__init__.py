@@ -177,6 +177,15 @@ class Process(object):
         @type: str
         """
         return str(self.uuid)
+    
+    def clean_temp_files(self):
+        """
+        Removes files listed in temp_files.
+        
+        Calls File.unlink()
+        """
+        for f in self.temp_files:
+            f.unlink()
 
 class InternalProcess(Process):
     def __init__(self,command):
