@@ -129,19 +129,6 @@ class File:
     def __hash__(self):
         return hash(self.logical_name)
         
-    def unlink(self):
-        """
-        Removes the file based on the physical_name.
-
-        Returns: Boolean indicating whether or not the file
-        could be removed. Note: Exceptions are not caught.
-        """
-        import os.path as OP
-        if OP.isfile(self.physical_name):
-            OP.os.unlink(self.physical_name)
-            return True
-        return False
-
     def full_path(self):
         """
         Returns a full path of the File, if the directory is provided. Otherwise the file name is returned.
@@ -150,6 +137,22 @@ class File:
         """
         import os.path
         return os.path.join(self.dir,self.physical_name)
+    
+    def unlink(self):
+        """
+        Removes the file based on the physical_name.
+
+        Returns: Boolean indicating whether or not the file
+        could be removed. Note: Exceptions are not caught.
+        """
+        import os.path as OP
+        full_path = self.full_path()
+        if OP.isfile(full_path):
+            OP.os.unlink(full_path)
+            return True
+        return False
+
+    
         
 
 class Process(object):
