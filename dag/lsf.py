@@ -70,7 +70,7 @@ def stage_files(proc,source_dir = None, set_grp_perms = True, overwrite = True):
     make_bsub(cmd,proc)
                                            
 
-def create_work(the_dag,dagfile, show_progress = False):
+def create_work(the_dag,dagfile):
     """
     Creates a workunit by processing the dag and running stage_files and schedule_work.
     

@@ -59,7 +59,7 @@ def create_work(root_dag,dagpath,show_progress):
         dag.boinc.create_work(root_dag,dagpath,show_progress)
     elif root_dag.engine == Engine.LSF:
         import dag.lsf
-        dag.lsf.create_work(root_dag,dagpath,show_progress)
+        dag.lsf.create_work(root_dag,dagpath)
     else:
         from dag import DagException
         raise DagException("Invalid engine id: %d" % root_dag.engine)    

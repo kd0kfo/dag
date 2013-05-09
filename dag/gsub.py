@@ -195,7 +195,7 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
             dag.boinc.create_work(root_dag,abs_dag_path,True)
         elif root_dag.engine == dag.Engine.LSF:
             import dag.lsf
-            dag.lsf.create_work(root_dag,abs_dag_path, True)
+            dag.lsf.create_work(root_dag,abs_dag_path)
     except Exception as e:
         import traceback
         print("Exception thrown creating work")
