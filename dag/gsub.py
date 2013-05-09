@@ -150,6 +150,7 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
     import os
     from os import path as OP
     import stat
+    import dag
     
     def save_dag(the_dag, fn):
         from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
