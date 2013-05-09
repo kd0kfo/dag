@@ -416,7 +416,7 @@ DAG is a directed acyclic graph. It stores a list of processes (nodes in the gra
         return retval
     
 
-def load(pickle_filename):
+def load(pickle_filename = None):
     """
     Loads a DAG object saved in a file.
 
@@ -427,6 +427,9 @@ def load(pickle_filename):
     import cPickle
     import types
     import lockfile
+
+    if not pickle_filename:
+        pickle_filename = DEFAULT_DAGFILE_NAME
 
     lock = lockfile.FileLock(pickle_filename)
     try:

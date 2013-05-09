@@ -67,6 +67,8 @@ class TridentInstance:
             retval.application_profile = self.application_profile
         if hasattr(self,"project_name"):
             retval.project_name = self.project_name
+        if hasattr(self,"host"):
+            retval.host = self.host
         return retval
             
 
@@ -85,6 +87,7 @@ def parse(args,kmap = {}):
     app_profile = None
     project_name = None
     chunk_size = default_chunk_size
+    host = None
     if 'assembly' in kmap:
         header_map['assembly'] = " ".join(kmap['assembly'])
         print("Labeling Assembly: {0}".format(header_map['assembly']))
@@ -102,6 +105,8 @@ def parse(args,kmap = {}):
         project_name = kmap['project_name'][0]
     if 'chunk_size' in kmap:
         chunk_size = int(kmap['chunk_size'][0])
+    if 'host' in kmap:
+        host = kmap['host'][0]
 
     mirna = args[0]
     dna = args[1]
@@ -148,6 +153,8 @@ def parse(args,kmap = {}):
             proc.application_profile = app_profile
         if not have_output:
             proc.args += " -out %s.out" % dna
+        if host:
+            proc.host = host
         retval.append(proc.get_dag_node())
     else:
         for i in list(range(1,num_files+1)):
@@ -157,6 +164,8 @@ def parse(args,kmap = {}):
             proc = TridentInstance(mirna,segment_name,strargs)
             proc.rsc_memory_limit = rsc_memory_limit
             proc.executable_name = "trident.centos6.1"
+            if host:
+                proc.host = host
             if app_profile:
                 proc.application_profile = app_profile
             if project_name:
