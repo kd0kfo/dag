@@ -311,7 +311,7 @@ def schedule_work(proc, dag_path):
     if hasattr(proc,"deadline"):
         delay_bounds = proc.deadline
     boinctools.schedule_work(proc.cmd,proc.get_unique_name(),wu_tmpl,res_tmpl,input_filenames,delay_bounds)
-    make_dag_marker(proc.workunit_name,dag_path)
+    make_dag_marker(proc.get_unique_name(),dag_path)
 
 def create_work(the_dag,dagfile, show_progress = False):
     """
@@ -433,8 +433,8 @@ def clean_workunit(root_dag, proc):
 
     remove_templates(proc)
     
-    if proc.workunit_name:
-        marker_filename = dag_marker_filename(proc.workunit_name)
+    if proc.get_unique_name():
+        marker_filename = dag_marker_filename(proc.get_unique_name())
         if OP.isfile(marker_filename):
             os.unlink(marker_filename)
 
@@ -480,4 +480,4 @@ def cancel_workunits(proc_list):
     Calls boinctools.cancel_workunits to cancel work units.
     """
     import boinctools
-    boinctools.cancel_workunits([proc.workunit_name for proc in proc_list])
+    boinctools.cancel_workunits([proc.get_unique_name() for proc in proc_list])
