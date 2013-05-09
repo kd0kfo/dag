@@ -127,7 +127,7 @@ def schedule_work(root_dag,proc,dagfile):
         from dag import DagException
         raise DagException("Invalid engine id: %d" % root_dag.engine)
 
-def update_state(cmd_args, root_dag, debug):
+def update_state(cmd_args, root_dag):
     """
     Updates the state of a process.
     
@@ -292,7 +292,7 @@ def update_dag(cmd, cmd_args, dagfile = dag.DEFAULT_DAGFILE_NAME, debug = False)
         dag.boinc.cancel_workunits(proc_list)
         root_dag.save()
     elif cmd == "update":
-        update_state(cmd_args,root_dag,debug)
+        update_state(cmd_args,root_dag)
     elif cmd == "state":
         count_only = False
         if "--count" in  cmd_args:
