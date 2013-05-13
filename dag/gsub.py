@@ -7,13 +7,27 @@ dag.gsub
 @date: November 7, 2012
 @license: GPL version 3 (see COPYING or http://www.gnu.org/licenses/gpl.html for details)
 
-This python module provides interface between BOINC C API and Python user code.
+Parses job submission files and calls job preparation functions for each command. 
+A Directed Acyclic Graph of processes is produced. Processes are run if a job submission
+engine is specified.
 """
 import dag
 import dag.util as dag_utils
 
 internal_counter = 0
 def preprocess_line(line,parser_kmap):
+    """
+    Reads a line beginning with a '#' character and follows the associated logic. The line may produce new process for the DAG and keywords/values 
+    that are added to parser_kmap. The return value is a tuple that contains the new parser_kmap and a list of new processes, if any.
+    
+    
+    @param line: Line from job submission script to be processed.
+    @type line: string
+    @param parser_kmap: Keyword map passed along between processes. These are populated by "#define" lines in the submission script.
+    @type parser_kmap: dict
+    @return: Tuple containing parser_kmap and a list of new processes
+    @rtype: tuple
+    """
     processes = [] # Extra processes that may be added to the DAG
     if line[0:7] == "#define":
         kmap_tokens = line.split()
@@ -47,15 +61,12 @@ def create_dag(input_filename, parsers, init_file = None):
     Jobs that have all of their prerequisites met are started, unless the
     --setup_only flag is provided.
 
-    Arguments:
     @param input_filename: Filename to be parsed into a DAG
     @type input_filename: str
     @param parsers: Dictionary that maps string command names to functions that are used to create DAG.
     @type parsers: dict
     @param init_file: Optional file to be used for startup variables and routines.
     @type init_file: file
-    
-    Returns: 
     @return:  DAG object if successful. Otherwise, None is returned
     @rtype: dag.DAG
     """
@@ -128,10 +139,18 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
     @type start_jobs: Boolean
     @param dagfile: Optional DAG filename to be used to save the DAG object. File must not already exist.
     @type dagfile: str
+    @param init_filename: File name of user parameters that is parsed before reading the job submission file.
+    @type init_filename: str
+    @param engine: System used to run processes.
+    @type engine: dag.States
+    @return: DAG contain processes created by the job submission script.
+    @rtype: dag.DAG
+    @raise dag.DagException: If DAG file already exists or cannot be created or if the init file cannot be read.
     """
     import os
     from os import path as OP
     import stat
+    import dag
     
     def save_dag(the_dag, fn):
         from stat import S_IRUSR,S_IWUSR,S_IRGRP,S_IWGRP
@@ -141,7 +160,7 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
     parsers = {}
 
     if OP.isfile(dagfile):
-        raise Exception("Jobs queue file already exists: \"%s\"" % dagfile)
+        raise dag.DagException("Jobs queue file already exists: \"%s\"" % dagfile)
 
     # Init file
     init_file = None
@@ -149,10 +168,12 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
         try:
             init_file = open(init_filename,"r")
         except IOError as ioe:
-            from sys import stderr
-            stderr.write("Could not read init file '%s'\n" % init_filename)
-            stderr.write("Reason: %s\n" % ioe.stderr)
-            exit(ioe.errno)
+            errmsg = "Could not read init file '%s'\n" % init_filename
+            errmsg += "Reason{0}: {1}\n".format(ioe.errno,ioe.stderr)
+            raise dag.DagException(errmsg)
+    else:
+        from dag.util import open_user_init
+        init_file = open_user_init()
             
     root_dag = create_dag(input_filename,parsers,init_file)
     if root_dag is None:
@@ -172,13 +193,12 @@ def gsub(input_filename,start_jobs = True,dagfile = dag.DEFAULT_DAGFILE_NAME,ini
     
     abs_dag_path = OP.abspath(dagfile)
     try:
-        import dag
         if root_dag.engine == dag.Engine.BOINC:
             import dag.boinc
             dag.boinc.create_work(root_dag,abs_dag_path,True)
         elif root_dag.engine == dag.Engine.LSF:
             import dag.lsf
-            dag.lsf.create_work(root_dag,abs_dag_path, True)
+            dag.lsf.create_work(root_dag,abs_dag_path)
     except Exception as e:
         import traceback
         print("Exception thrown creating work")

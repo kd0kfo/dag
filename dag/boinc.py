@@ -5,7 +5,7 @@ dag.boinc
 
 
 @author: David Coss, PhD
-@date: November 7, 2012
+@date: May 9, 2013
 @license: GPL version 3 (see COPYING or http://www.gnu.org/licenses/gpl.html for details)
 
 Interface module to boinctools. This allows processes in a DAG to interpret and use BOINC data.
@@ -172,9 +172,11 @@ def dag_marker_filename(wuname):
     the dag_lists directory of the project. This is a fan out directory 
     tree similar to downloads/
 
-    Arguments: wuname -- String representation of the workunit name
-    Returns: String filename for a dag marker (file not created).
-    Raises dag.DagException if dag_lists is not created
+    @param wuname:String representation of the workunit name
+    @type wuname: str
+    @return: String filename for a dag marker (file not created).
+    @rtype: str
+    @raise dag.DagException: if dag_lists is not created
     """
     from os import path as OP
     import os
@@ -203,11 +205,14 @@ def make_dag_marker(wuname, dag_path):
     """
     Creates the dag marker file.
 
-    Arguments: wuname -- String representation of the workunit name
-    dag_path -- String representation of the path to the DAG
+    @param wuname:String representation of the workunit name
+    @type wuname: str
+    @param dag_path: Path to the DAG
+    @type dag_path: str
 
-    Return: Filename of dag marker file
-    Throws Exception if the dag_lists directory does not exist.
+    @return: Filename of dag marker file
+    @rtype: str
+    @raise dag.DagException: If the dag_lists directory does not exist.
     """
     from os import getuid
     
@@ -222,8 +227,10 @@ def marker_to_dagpath(filename):
     """
     Parses a DAG marker file and returns the path to the DAG
     
-    Arguments: filename -- String representation of the marker's path
-    Returns: String path to DAG file
+    @param filename: String representation of the marker's path
+    @type filename: str
+    @return: String path to DAG file
+    @rtype: str
     """
     with open(filename,"r") as file:
         line = file.readline()
@@ -251,9 +258,13 @@ def result_to_dag(result_name):
     """
     Takes a BOINC result name and returns the corresponding DAG.
 
-    Arguments: result_name -- String representation of the result name.
-    Returns: dag.DAG object for the result
-    Raises dag_utils.NoDagMarkerException if the result does not have a dag marker file.
+    @param result_name: String representation of the result name.
+    @type result_name: str
+    @return: DAG object for the result
+    @rtype: dag.DAG
+    @raise dag.utils.NoDagMarkerException: if the result does not have a dag marker file.
+    @raise dag.utils.MissingDAGFile: If the file in the dag marker is missing.
+    @raise 
     """
     import dag
     import dag.util as dag_utils
@@ -268,7 +279,6 @@ def result_to_dag(result_name):
     except IOError as ioe:
         raise dag_utils.NoDagMarkerException("Missing DAG marker.\nError Message: %s\nFile: %s" % (ioe.strerror, marker_path))
     
-    dagdir = OP.split(dagpath)[0]
     if not OP.isfile(dagpath):
         raise dag.MissingDAGFile("Missing dag file '%s' listed in marker '%s'" % (dagpath, marker_path))
     try:
@@ -282,28 +292,26 @@ def schedule_work(proc, dag_path):
     Calls create_work. If create_work fails, an exception is raised.
     If create_work succeeds, a file is created that lists the dag file for the work unit.
     
-    Parameters: Process, Absoulte path to dag file
-    Returns: no return value
-    Throws Exception if create_work fails or if the dag marker file cannot be created.
+    @param proc: Process to be scheduled
+    @type proc: dag.Process
+    @param dag_path: Absoulte path to DAG file
+    @type dag_path: dag.DAG
+    @raise Exception: If create_work fails or if the dag marker file cannot be created.
     """
     
     import os.path as OP
-    import os
-    import subprocess as SP
-    import dag
-    import boinctools
-
+    
     if proc.workunit_name in forbidden_wu_names:
         raise Exception("The name '%s' is not allowed because it is a reserved word in the DAG system." % proc.workunit_name)
 
     wu_tmpl = OP.split(proc.workunit_template.physical_name)[1]
     res_tmpl = OP.split(proc.result_template.physical_name)[1]
-    input_filenames = [unique_input_name(proc,input) for input in proc.input_files]
+    input_filenames = [unique_input_name(proc,infile) for infile in proc.input_files]
     delay_bounds = None
     if hasattr(proc,"deadline"):
         delay_bounds = proc.deadline
     boinctools.schedule_work(proc.cmd,proc.get_unique_name(),wu_tmpl,res_tmpl,input_filenames,delay_bounds)
-    make_dag_marker(proc.workunit_name,dag_path)
+    make_dag_marker(proc.get_unique_name(),dag_path)
 
 def create_work(the_dag,dagfile, show_progress = False):
     """
@@ -311,11 +319,11 @@ def create_work(the_dag,dagfile, show_progress = False):
 
     Sets the workunit information in the dag.Process objects
 
-    Arguments: dag and dagfile path to dag file
-    Returns: no value
-    Throws Exception if an input file does not exist and is not part of a parent process.
+    @type the_dag: dag.DAG
+    @param dagfile: Path to DAG file
+    @type dagfile: str
+    @raise Exception: If an input file does not exist and is not part of a parent process.
     """
-    import os
     import os.path as OP
     import random, stat
     import dag
@@ -410,10 +418,10 @@ def clean_workunit(root_dag, proc):
     Removes and cleans a process from the DAG. This function
     will remove temporary files and connections to child processes.
     
-    Arguments: root_dag -- dag.DAG object containing processes
-    proc -- dag.Process object to be removed
-    
-    No return value
+    @param root_dag: DAG containing proc
+    @type root_dag: dag.DAG
+    @param proc: Process to be cleaned
+    @type proc: dag.Process
     """
     import os.path as OP
     import os
@@ -421,22 +429,12 @@ def clean_workunit(root_dag, proc):
     if proc == None:
         return
 
-    #Remove connection(s) to child node(s)
-    for output in proc.output_files:
-        if not output in root_dag.graph:
-            continue
-        if proc in root_dag.graph[output]:
-            root_dag.graph[output].remove(proc)
-        if len(root_dag.graph[output]) == 0:
-            root_dag.graph.pop(output)
+    proc.clean(root_dag)
 
     remove_templates(proc)
-    for tmpl in proc.input_files + proc.output_files:
-        if tmpl.temp_file:
-            tmpl.unlink()
-        
-    if proc.workunit_name:
-        marker_filename = dag_marker_filename(proc.workunit_name)
+    
+    if proc.get_unique_name():
+        marker_filename = dag_marker_filename(proc.get_unique_name())
         if OP.isfile(marker_filename):
             os.unlink(marker_filename)
 
@@ -446,7 +444,7 @@ def start_children(proc,root_dag,dag_filename):
     Assumes the children's files are located in the same directory as the DAG,
     if the file paths are not absolute.
 
-    Raises Exception if the create_work call fails.
+    @raise Exception: If the create_work call fails.
     """
     import dag
     import os.path as OP
@@ -457,9 +455,9 @@ def start_children(proc,root_dag,dag_filename):
         if child.state == dag.States.RUNNING:
             print("Already running")
             continue
-        for input in child.input_files:
-            if input in root_dag.graph:
-                for parent_proc in root_dag.graph[input]:
+        for infile in child.input_files:
+            if infile in root_dag.graph:
+                for parent_proc in root_dag.graph[infile]:
                     if parent_proc.state != dag.States.SUCCESS:
                         print("No. Not all Processes are finished.")
                         defer = True
@@ -478,5 +476,8 @@ def start_children(proc,root_dag,dag_filename):
         root_dag.save()
 
 def cancel_workunits(proc_list):
+    """
+    Calls boinctools.cancel_workunits to cancel work units.
+    """
     import boinctools
-    boinctools.cancel_workunits([proc.workunit_name for proc in proc_list])
+    boinctools.cancel_workunits([proc.get_unique_name() for proc in proc_list])
