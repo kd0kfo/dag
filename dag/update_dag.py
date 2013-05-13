@@ -23,7 +23,8 @@ command_help = {
     "stage": "Copies necessary files to their required locations on the server.",
     "start": "Starts ALL processes",
     "state": "Prints processes in a given state. The optional \"--count\" flag may be used to show only a count of the number of processes in that state. States are: {0}".format(", ".join([dag.strstate(i) for i in range(0,dag.States.NUM_STATES)])),
-    "update": "Update the state of a workunit."
+    "update": "Update the state of a workunit.",
+    "uuid": "Gets UUID for a work unit."
     
     }
 
@@ -196,10 +197,12 @@ def update_dag(cmd, cmd_args, dagfile = dag.DEFAULT_DAGFILE_NAME, debug = False)
         if len(cmd_args) == 0:
             print(root_dag)
         else:
-            for proc in root_dag.processes:
-                if proc.workunit_name == cmd_args[0]:
-                    print(proc)
-            exit(0)
+            proc = root_dag.get_process(cmd_args[0])
+            if proc:
+                print(proc)
+            else:
+                print("No such process found: {0}".format(cmd_args[0]))
+            return
     elif cmd == "help":
         if not cmd_args:
             print_help(None)
@@ -317,6 +320,9 @@ def update_dag(cmd, cmd_args, dagfile = dag.DEFAULT_DAGFILE_NAME, debug = False)
             else:
                 for i in proc_list:
                     print(i)
+    elif cmd == "uuid":
+        proc = root_dag.get_process(cmd_args[0])
+        print(proc.uuid)
     else:
         if not debug:
             print("Unknown command: %s" % cmd)
