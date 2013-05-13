@@ -401,7 +401,7 @@ class DAG:
 
     def get_process(self,wuname):
         """
-        Finds a process based on its name.
+        Finds a process based on its name. If the workunit name is not found, UUID is tried instead.
         
         @param wuname: Process name
         @type wuname: str
@@ -410,6 +410,9 @@ class DAG:
         """
         for i in self.processes:
             if i.workunit_name == wuname:
+                return i
+        for i in self.processes:
+            if str(i.uuid) == wuname:
                 return i
         return None
 
