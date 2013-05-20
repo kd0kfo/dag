@@ -155,7 +155,10 @@ def update_state(cmd_args, root_dag):
         root_dag.save()
     elif root_dag.engine == Engine.LSF:
         from lsf import get_state
-        proc.state = get_state(proc)
+        if len(cmd_args) == 2:
+            proc.state = dag.intstate(cmd_args[1])
+        else:
+            proc.state = get_state(proc)
         root_dag.save()
     else:
         raise DagException("Invalid engine id: %d" % root_dag.engine)
