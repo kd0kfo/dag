@@ -17,19 +17,19 @@ import dag.util as dag_utils
 internal_counter = 0
 def preprocess_line(line,parser_kmap):
     """
-    Reads a line beginning with a '#' character and follows the associated logic. The line may produce new process for the DAG and keywords/values 
+    Reads a line beginning with a '%' character and follows the associated logic. The line may produce new process for the DAG and keywords/values 
     that are added to parser_kmap. The return value is a tuple that contains the new parser_kmap and a list of new processes, if any.
     
     
     @param line: Line from job submission script to be processed.
     @type line: string
-    @param parser_kmap: Keyword map passed along between processes. These are populated by "#define" lines in the submission script.
+    @param parser_kmap: Keyword map passed along between processes. These are populated by "%define" lines in the submission script.
     @type parser_kmap: dict
     @return: Tuple containing parser_kmap and a list of new processes
     @rtype: tuple
     """
     processes = [] # Extra processes that may be added to the DAG
-    if line[0:7] == "#define":
+    if line[0:7] == "%define":
         kmap_tokens = line.split()
         if not kmap_tokens or len(kmap_tokens) < 2:
             raise dag.DagException("Invalid define line.\nExpected:\n#define key [value]\nReceived:\n{0}".format(line))
@@ -37,12 +37,12 @@ def preprocess_line(line,parser_kmap):
             parser_kmap[kmap_tokens[1]] = True
         else:
             parser_kmap[kmap_tokens[1]] = kmap_tokens[2:]
-    elif line[0:7] == "#python":
+    elif line[0:7] == "%python":
         from dag import InternalProcess,File
         import re
         global internal_counter
         list_syntax = "\[([^\[\]]*)\]"
-        match = re.search("#python\s*{0}\s*{0}\s(.*)$".format(list_syntax),line)
+        match = re.search("%python\s*{0}\s*{0}\s(.*)$".format(list_syntax),line)
         if not match or len(match.groups()) != 3:
             raise dag.DagException("Invalid python line.\nRequire: input file list, output file list and python code.")
         params = match.groups()
@@ -87,7 +87,9 @@ def create_dag(input_filename, parsers, init_file = None):
             line = line.strip()
             if len(line) == 0:
                 continue
-            if line[0] == '#':
+            if line[0] == '#': # Comment line
+                continue
+            if line[0] == '%': # Preprocess
                 (parser_kmap, extra_processes) = preprocess_line(line,parser_kmap)
                 for extra_proc in extra_processes:
                     root_dag.add_process(extra_proc)
