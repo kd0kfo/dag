@@ -98,8 +98,10 @@ def create_work(the_dag,dagfile):
             from os import getcwd
             filename = join(getcwd(),"{0}.bsub".format(proc.workunit_name))
             raise JobSubmitFailed("Could not submit job. Bsub script name: {0}.bsub".format(filename))
-        
-        retval = subprocess.call('bsub -w "ended({0})" -J {0}_notifier -app python-2.7.2 update_dag update {0}'.format(proc.workunit_name),shell=True)
+        notifier_project_name = "dag_notifier"
+        if hasattr(proc,"project_name"):
+            notifier_project_name = proc.project_name
+        retval = subprocess.call('bsub -P {1} -w "ended({0})" -J {0}_notifier -app python-2.7.2 update_dag update {0}'.format(proc.workunit_name,notifier_project_name),shell=True)
         
         proc.state = dag.States.RUNNING
         the_dag.save()
