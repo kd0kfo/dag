@@ -367,7 +367,7 @@ def create_work(the_dag,dagfile, show_progress = False):
 
         
         if the_dag.incomplete_prereqs(proc):
-            print("Missing input file not produced by other process: \"%s\"" % input.physical_name)
+            print("Process '{0}' is missing input file(s) produced by other processes".format(proc.workunit_name))
             print("Have the following files:")
             for i in the_dag.graph.keys():
                 print("%s (%s)" % (i.physical_name, i.logical_name))
