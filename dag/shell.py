@@ -22,7 +22,11 @@ class ShellProcess(Process):
         self.args = args
 
     def __str__(self):
-        return "{0} {1}".format(self.cmd, " ".join(self.args))
+        from dag import enum2string, States
+        strval = "Command: {0} {1}\n".format(self.cmd, " ".join(self.args))
+        strval += "Status: {0}".format(enum2string(States, self.state))
+        
+        return strval
 
     def start(self):
         import subprocess
