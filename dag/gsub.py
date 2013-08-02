@@ -88,7 +88,7 @@ def create_dag(input_filename, parsers, init_file=None, engine=dag.Engine.SHELL)
     """
 
     import dag.util as dag_utils
-    from dag import DAG, Engine
+    from dag import DAG, Engine, DagException
 
     # PROJECT SPECIFIC DEFINES. FACTOR OUT.
     if not init_file:
@@ -96,7 +96,7 @@ def create_dag(input_filename, parsers, init_file=None, engine=dag.Engine.SHELL)
 
     # If we still don't have the init file, there is a problem.
     if not init_file:
-        raise dag.DagException("Could not open init file. File not found.")
+        raise DagException("Could not open init file. File not found.")
 
     exec(compile(init_file.read(), init_file.name, 'exec'))
 
