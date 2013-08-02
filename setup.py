@@ -29,6 +29,13 @@ class Tester(Command):
             print("Failure")
             exit(1)
 
+        print("Testing shell processes")
+        if test.test_shell_processes():
+            print("Success")
+        else:
+            print("Failure")
+            exit(1)
+
         print("Testing progress bar")
         #test.test_progress_bar()
         print("Did you see a progress bar?")

@@ -81,6 +81,24 @@ def test_gsub():
     return True
 
 
+def test_shell_processes():
+    from dag import gsub, DEFAULT_DAGFILE_NAME, States, Engine
+    from os.path import isfile
+
+    if isfile(DEFAULT_DAGFILE_NAME):
+        from os import unlink
+        unlink(DEFAULT_DAGFILE_NAME)
+
+    test_dag = gsub.gsub("test/shell.sub", init_filename="test/dagrc",
+                         engine=Engine.SHELL)
+
+    for proc in test_dag.processes:
+        if proc.state != States.SUCCESS:
+            return False
+
+    return True
+
+
 def test_progress_bar():
     from progressbar import ProgressBar, Percentage, Bar
     from time import sleep

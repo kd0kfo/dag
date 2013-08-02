@@ -117,8 +117,10 @@ def schedule_work(root_dag,proc,dagfile):
     @type proc: dag.Process
     @raise dag.DagException: If the root dag contains an invalid engine.
     """
-    from dag import Engine,InternalProcess
-    if isinstance(proc,InternalProcess):
+    from dag import Engine, InternalProcess
+    from dag.shell import ShellProcess
+
+    if isinstance(proc, InternalProcess) or isinstance(proc, ShellProcess):
         proc.start()
         return
     if root_dag.engine == Engine.BOINC:

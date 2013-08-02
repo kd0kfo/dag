@@ -27,7 +27,7 @@ def enum(*sequential,**vals):
     the_enums = dict(zip(sequential, range(len(sequential))), **vals)
     return type('Enumeration',(),the_enums)
 
-Engine = enum('BOINC','LSF','NUM_ENGINES')
+Engine = enum('BOINC','LSF','SHELL', 'NUM_ENGINES')
 States = enum('CREATED','STAGED','RUNNING','SUCCESS','FAIL','NUM_STATES')
 def enum2string(enum,val):
     """

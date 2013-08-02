@@ -12,8 +12,8 @@ Parses job submission files and calls job preparation functions
 for each command. A Directed Acyclic Graph of processes is produced.
 Processes are run if a job submission engine is specified.
 """
+
 import dag
-import dag.util as dag_utils
 
 internal_counter = 0
 
@@ -35,6 +35,7 @@ def preprocess_line(line, parser_kmap):
     @return: Tuple containing parser_kmap and a list of new processes
     @rtype: tuple
     """
+    
     processes = []  # Extra processes that may be added to the DAG
     if line[0:7] == "%define":
         kmap_tokens = line.split()
@@ -68,7 +69,7 @@ def preprocess_line(line, parser_kmap):
     return (parser_kmap, processes)
 
 
-def create_dag(input_filename, parsers, init_file=None):
+def create_dag(input_filename, parsers, init_file=None, engine=dag.Engine.SHELL):
     """
     Takes an input file that contains a list of commands and generates a dag.
     Jobs that have all of their prerequisites met are started, unless the
@@ -86,6 +87,9 @@ def create_dag(input_filename, parsers, init_file=None):
     @rtype: dag.DAG
     """
 
+    import dag.util as dag_utils
+    from dag import DAG, Engine
+
     # PROJECT SPECIFIC DEFINES. FACTOR OUT.
     if not init_file:
         init_file = dag_utils.open_user_init()
@@ -96,7 +100,8 @@ def create_dag(input_filename, parsers, init_file=None):
 
     exec(compile(init_file.read(), init_file.name, 'exec'))
 
-    root_dag = dag.DAG()
+    root_dag = DAG()
+    root_dag.engine = engine
     parser_kmap = {}  # used as the second argument of parser functions (below)
     with open(input_filename, "r") as infile:
         for line in infile:
@@ -117,14 +122,19 @@ def create_dag(input_filename, parsers, init_file=None):
                     tokens.remove(token)
             pname = tokens[0]
             parser_args = tokens[1:]  # used by function below
-            if not pname in parsers.keys():
-                print("No function for %s" % pname)
-                print("Known functions: ", parsers.keys())
-                return None
-            print("Running %s(parser_args,parser_kmap)" % parsers[pname])
+            if root_dag.engine == Engine.SHELL:
+                import dag.shell
+                proc_list = dag.shell.parse_shell(pname, parser_args, parser_kmap)
+            else:
+                if not pname in parsers.keys():
+                    from dag import DagException
+                    print("No function for %s" % pname)
+                    print("Known functions: ", parsers.keys())
+                    raise DagException("Unknown Function: {0}".format(pname))
 
-            funct = "%s(parser_args,parser_kmap)" % parsers[pname]
-            proc_list = eval(funct)   # uses parser_args
+                funct = "%s(parser_args,parser_kmap)" % parsers[pname]
+                print("Running %s" % funct)
+                proc_list = eval(funct)   # uses parser_args
 
             if proc_list is None:
                 continue
@@ -174,7 +184,7 @@ def gsub(input_filename, start_jobs=True, dagfile=dag.DEFAULT_DAGFILE_NAME,
     import os
     from os import path as OP
     import stat
-    import dag
+    from dag import Engine
 
     def save_dag(the_dag, fn):
         from stat import S_IRUSR, S_IWUSR, S_IRGRP, S_IWGRP
@@ -201,11 +211,10 @@ def gsub(input_filename, start_jobs=True, dagfile=dag.DEFAULT_DAGFILE_NAME,
         from dag.util import open_user_init
         init_file = open_user_init()
 
-    root_dag = create_dag(input_filename, parsers, init_file)
+    root_dag = create_dag(input_filename, parsers, init_file, engine)
     if root_dag is None:
         raise dag.DagException("Could not create DAG using submission "
                                "file %s" % input)
-    root_dag.engine = engine
     save_dag(root_dag, dagfile)
 
     # Check to see if the directory is writable. If not, issue warning.
@@ -220,12 +229,15 @@ def gsub(input_filename, start_jobs=True, dagfile=dag.DEFAULT_DAGFILE_NAME,
 
     abs_dag_path = OP.abspath(dagfile)
     try:
-        if root_dag.engine == dag.Engine.BOINC:
+        if root_dag.engine == Engine.BOINC:
             import dag.boinc
             dag.boinc.create_work(root_dag, abs_dag_path, True)
-        elif root_dag.engine == dag.Engine.LSF:
+        elif root_dag.engine == Engine.LSF:
             import dag.lsf
             dag.lsf.create_work(root_dag, abs_dag_path)
+        elif root_dag.engine == Engine.SHELL:
+            import dag.shell
+            dag.shell.create_work(root_dag, abs_dag_path)
     except Exception as e:
         import traceback
         print("Exception thrown creating work")
