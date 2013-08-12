@@ -37,7 +37,7 @@ class Tester(Command):
             exit(1)
 
         print("Testing progress bar")
-        #test.test_progress_bar()
+        test.test_progress_bar()
         print("Did you see a progress bar?")
 
 
