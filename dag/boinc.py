@@ -70,11 +70,11 @@ def create_workunit_template(proc):
             outfile.write("""
         <command_line> %s </command_line>\n""" % proc.args)
         outfile.write("<rsc_fpops_bound>%e</rsc_fpops_bound>\n"
-                     % proc.rsc_fpops_bound)
+                      % proc.rsc_fpops_bound)
         outfile.write("<rsc_fpops_est>%e</rsc_fpops_est>\n"
-                     % proc.rsc_fpops_est)
+                      % proc.rsc_fpops_est)
         outfile.write("<rsc_memory_bound>%e</rsc_memory_bound>\n"
-                     % proc.rsc_memory_bound)
+                      % proc.rsc_memory_bound)
         outfile.write("""
      </workunit>
 </input_template>""")
@@ -98,10 +98,10 @@ def create_result_template(proc, filename=None):
     import tempfile
     import os.path
 
-    if filename == None:
+    if filename is None:
         tmpl_path = os.path.join(boinctools.project_path, "templates")
         outfile = tempfile.NamedTemporaryFile(mode='w',
-                                           delete=False, dir=tmpl_path)
+                                              delete=False, dir=tmpl_path)
     else:
         outfile = open(filename, "w")
 
@@ -364,7 +364,7 @@ def create_work(the_dag, dagfile, show_progress=False):
     progress_bar = None
     progress_bar_counter = 0
 
-    if the_dag.processes == None:
+    if the_dag.processes is None:
         return
 
     if show_progress:
@@ -389,13 +389,13 @@ def create_work(the_dag, dagfile, show_progress=False):
         # Setup workunit templates
         if isinstance(proc, dag.GridProcess):
             wu_tmpl = proc.workunit_template
-            if wu_tmpl == None or not OP.isfile(wu_tmpl.physical_name):
+            if wu_tmpl is None or not OP.isfile(wu_tmpl.physical_name):
                 wu_tmpl = create_workunit_template(proc)
                 OP.os.chmod(wu_tmpl.full_path(),
                             stat.S_IROTH | stat.S_IRUSR | stat.S_IWUSR
                             | stat.S_IRGRP | stat.S_IWGRP)
             res_tmpl = proc.result_template
-            if res_tmpl == None or not OP.isfile(res_tmpl.physical_name):
+            if res_tmpl is None or not OP.isfile(res_tmpl.physical_name):
                 res_tmpl = create_result_template(proc)
                 OP.os.chmod(res_tmpl.full_path(),
                             stat.S_IROTH | stat.S_IRUSR | stat.S_IWUSR
@@ -466,7 +466,7 @@ def clean_workunit(root_dag, proc):
     import os.path as OP
     import os
 
-    if proc == None:
+    if proc is None:
         return
 
     proc.clean(root_dag)

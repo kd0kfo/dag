@@ -17,6 +17,7 @@ class NoDagMarkerException(dag.DagException):
     """
     pass
 
+
 def dump_traceback(e):
     """
     Writes traceback information to standard output.
@@ -24,7 +25,7 @@ def dump_traceback(e):
     Arguments: Exception
     No return value.
     """
-    
+
     import sys
     import traceback
     exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -40,13 +41,15 @@ def dump_traceback(e):
     print(formatted_lines[0])
     print(formatted_lines[-1])
     print "*** format_exception:"
-    print(repr(traceback.format_exception(exc_type, exc_value,exc_traceback)))
+    print(repr(traceback.format_exception(exc_type, exc_value,
+                                          exc_traceback)))
     print("*** extract_tb:")
     print(repr(traceback.extract_tb(exc_traceback)))
     print("*** format_tb:")
     print(repr(traceback.format_tb(exc_traceback)))
     print("*** tb_lineno:", exc_traceback.tb_lineno)
-        
+
+
 def open_user_init():
     from os import getenv
     import os.path as OP
@@ -54,12 +57,12 @@ def open_user_init():
 
     file_path = getenv('HOME')
     if not file_path:
-        raise dag.DagException("Could not obtain Home Directory variable: $HOME")
+        raise dag.DagException("Could not obtain Home Directory"
+                               " variable: $HOME")
 
-    file_path = OP.join(file_path,DEFAULT_DAG_CONFIG_FILE)
+    file_path = OP.join(file_path, DEFAULT_DAG_CONFIG_FILE)
 
     if not OP.isfile(file_path):
         return None
 
-    return open(file_path,"r")
-    
+    return open(file_path, "r")

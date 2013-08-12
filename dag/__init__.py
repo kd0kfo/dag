@@ -85,7 +85,7 @@ def strstate(state):
     @return: Name of state
     @rtype: str
     """
-    if state == None:
+    if state is None:
         return 'None'
     string = enum2string(States, state)
     if string:
@@ -130,7 +130,7 @@ class File:
                  max_nbytes=15000000):
         import os.path as OP
         self.physical_name = OP.basename(physical_name)
-        if logical_name == None:
+        if logical_name is None:
             self.logical_name = self.physical_name
         else:
             self.logical_name = logical_name
@@ -512,11 +512,11 @@ class DAG:
                                % self.filename)
 
         backup_filename = self.filename + ".bak"
-        if outfile == None:
+        if outfile is None:
             try:
                 # Backup in case of problems
                 if (backup_first and OP.isfile(self.filename)
-                    and not OP.isfile(backup_filename)):
+                   and not OP.isfile(backup_filename)):
                     import shutil
                     shutil.copyfile(self.filename, backup_filename)
                 outfile = open(self.filename, "wb")
