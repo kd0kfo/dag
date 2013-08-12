@@ -25,7 +25,7 @@ class ShellProcess(Process):
         from dag import enum2string, States
         strval = "Command: {0} {1}\n".format(self.cmd, " ".join(self.args))
         strval += "Status: {0}".format(enum2string(States, self.state))
-        
+
         return strval
 
     def start(self):
@@ -42,7 +42,7 @@ def parse_shell(cmd, args, header_map):
 
 def create_work(root_dag, dag_path):
     from dag import States
-    
+
     print("SHELL: Starting {0} processes".format(len(root_dag.processes)))
     for proc in root_dag.processes:
         if proc.state not in [States.CREATED, States.SUCCESS]:
