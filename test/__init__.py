@@ -56,7 +56,7 @@ def test_dag_objects():
 
 
 def test_gsub():
-    from dag import gsub, DEFAULT_DAGFILE_NAME
+    from dag import gsub, DEFAULT_DAGFILE_NAME, Engine
     from os.path import isfile
 
     expected_command = "print(\"Not a comment\")"
@@ -64,7 +64,8 @@ def test_gsub():
     if isfile(DEFAULT_DAGFILE_NAME):
         from os import unlink
         unlink(DEFAULT_DAGFILE_NAME)
-    test_dag = gsub.gsub("test/internal.sub", init_filename="test/dagrc")
+    test_dag = gsub.gsub("test/internal.sub", init_filename="test/dagrc",
+                         engine=Engine.SHELL)
     processes = test_dag.processes
     if len(processes) != 1:
         print("Invalid number of processes produced by submission file")
