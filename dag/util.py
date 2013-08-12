@@ -4,12 +4,12 @@ dag.utils
 
 @author: David Coss, PhD
 @date: May 9, 2013
-@license: GPL version 3 (see COPYING or http://www.gnu.org/licenses/gpl.html for details)
+@license: GPL version 3 (see COPYING
+ or http://www.gnu.org/licenses/gpl.html for details)
 
 """
 import dag
 
-project_path = '/boinc/projects/stjudeathome'
 
 class NoDagMarkerException(dag.DagException):
     """
