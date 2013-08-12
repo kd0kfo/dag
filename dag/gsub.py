@@ -244,6 +244,7 @@ def gsub(input_filename, start_jobs=True, dagfile=dag.DEFAULT_DAGFILE_NAME,
         print("Exception thrown creating work")
         print("Message: %s" % e.message)
         traceback.print_exc()
+        raise e
 
     root_dag.save()
     return root_dag
