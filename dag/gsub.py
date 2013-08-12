@@ -35,7 +35,7 @@ def preprocess_line(line, parser_kmap):
     @return: Tuple containing parser_kmap and a list of new processes
     @rtype: tuple
     """
-    
+
     processes = []  # Extra processes that may be added to the DAG
     if line[0:7] == "%define":
         kmap_tokens = line.split()
@@ -69,7 +69,8 @@ def preprocess_line(line, parser_kmap):
     return (parser_kmap, processes)
 
 
-def create_dag(input_filename, parsers, init_file=None, engine=dag.Engine.SHELL):
+def create_dag(input_filename, parsers, init_file=None,
+               engine=dag.Engine.SHELL):
     """
     Takes an input file that contains a list of commands and generates a dag.
     Jobs that have all of their prerequisites met are started, unless the
@@ -124,10 +125,10 @@ def create_dag(input_filename, parsers, init_file=None, engine=dag.Engine.SHELL)
             parser_args = tokens[1:]  # used by function below
             if root_dag.engine == Engine.SHELL:
                 import dag.shell
-                proc_list = dag.shell.parse_shell(pname, parser_args, parser_kmap)
+                proc_list = dag.shell.parse_shell(pname, parser_args,
+                                                  parser_kmap)
             else:
                 if not pname in parsers.keys():
-                    from dag import DagException
                     print("No function for %s" % pname)
                     print("Known functions: ", parsers.keys())
                     raise DagException("Unknown Function: {0}".format(pname))
