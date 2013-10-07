@@ -26,6 +26,8 @@ class BjobsFailed(DagException):
 class LSFProcess(GridProcess):
     def __init__(self, *args, **kmap):
         super(LSFProcess, self).__init__(*args)
+
+        self.executable_name = self.cmd
         self.app_profile = None
         self.project_name = None
         self.host = None
