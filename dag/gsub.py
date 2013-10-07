@@ -97,7 +97,11 @@ def create_dag(input_filename, parsers, init_file=None,
 
     # If we still don't have the init file, there is a problem.
     if not init_file:
-        raise DagException("Could not open init file. File not found.")
+        if init_file is None:
+            raise DagException("No init file provided.")
+        else:
+            raise DagException("Could not open init file ({0}). File not found."
+                               .format(init_file.name))
 
     exec(compile(init_file.read(), init_file.name, 'exec'))
 
@@ -123,7 +127,7 @@ def create_dag(input_filename, parsers, init_file=None,
                     tokens.remove(token)
             pname = tokens[0]
             parser_args = tokens[1:]  # used by function below
-            if root_dag.engine == Engine.SHELL:
+            if False and root_dag.engine == Engine.SHELL:
                 import dag.shell
                 proc_list = dag.shell.parse_shell(pname, parser_args,
                                                   parser_kmap)

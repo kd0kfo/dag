@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 
 def print_usage():
+    from dag import DEFAULT_DAG_CONFIG_FILE, DEFAULT_DAGFILE_NAME
+
     print("Usage: gsub [options] <filename>")
     print("Options:")
-    print("-d, --dagfile FILE\tSpecify DAG file to be used. Default: jobs.dag")
+    print("-d, --dagfile FILE\tSpecify DAG file to be used. Default: {0}"
+          .format(DEFAULT_DAGFILE_NAME))
     print("-e, --engine STRING\tName of job batch type. Default: BOINC")
-    print("-i, --init FILE\t\tSpecify input file to be used. Default: $HOME/.boincdag")
+    print("-i, --init FILE\t\tSpecify input file to be used."
+          " Default: $HOME/{0}".format(DEFAULT_DAG_CONFIG_FILE))
     print("-s, --setup_only\t\tSetup the DAG, but do not stage and run jobs. Default: off")
     print("-v, --version\t\tPrint version info.")
     
