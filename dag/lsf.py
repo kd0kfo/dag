@@ -12,7 +12,7 @@ dag.lsf
 Interface module to LSF. This allows processes in a DAG to interpret
  and use LSF data.
 """
-from dag import DagException
+from dag import DagException, GridProcess
 
 
 class JobSubmitFailed(DagException):
@@ -21,6 +21,22 @@ class JobSubmitFailed(DagException):
 
 class BjobsFailed(DagException):
     pass
+
+
+class LSFProcess(GridProcess):
+    def __init__(self, *args, **kmap):
+        super(LSFProcess, self).__init__(*args)
+        self.app_profile = None
+        self.project_name = None
+        self.host = None
+        if 'memory_limit' in kmap:
+            self.rsc_memory_limit = int(kmap['memory_limit'][0])
+        if 'app' in kmap:
+            self.app_profile = kmap['app'][0]
+        if 'project_name' in kmap:
+            self.project_name = kmap['project_name'][0]
+        if 'host' in kmap:
+            self.host = kmap['host'][0]
 
 
 def stage_files(proc, source_dir=None, set_grp_perms=True, overwrite=True):
