@@ -26,7 +26,7 @@ class BjobsFailed(DagException):
 class LSFProcess(GridProcess):
     def __init__(self, *args, **kmap):
         super(LSFProcess, self).__init__(*args)
-
+        
         self.executable_name = self.cmd
         self.app_profile = None
         self.project_name = None
@@ -121,6 +121,8 @@ def create_work(the_dag, dagfile):
     for proc in the_dag.processes:
         if proc.state not in [dag.States.CREATED, dag.States.STAGED]:
             continue
+        if the_dag.incomplete_prereqs(proc):
+            continue
         if not proc.workunit_name:
             stage_files(proc)
         retval = subprocess.call("bsub < %s.bsub"
@@ -132,7 +134,7 @@ def create_work(the_dag, dagfile):
             filename = join(getcwd(),
                             "{0}.bsub".format(proc.workunit_name))
             raise JobSubmitFailed("Could not submit job."
-                                  " Bsub script name: {0}.bsub"
+                                  " Bsub script name: {0}"
                                   .format(filename))
         notifier_project_name = "dag_notifier"
         if hasattr(proc, "project_name"):
