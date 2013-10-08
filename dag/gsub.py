@@ -127,7 +127,7 @@ def create_dag(input_filename, parsers, init_file=None,
                     tokens.remove(token)
             pname = tokens[0]
             parser_args = tokens[1:]  # used by function below
-            if False and root_dag.engine == Engine.SHELL:
+            if root_dag.engine == Engine.SHELL:
                 import dag.shell
                 proc_list = dag.shell.parse_shell(pname, parser_args,
                                                   parser_kmap)
