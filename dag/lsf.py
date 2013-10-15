@@ -58,13 +58,7 @@ def stage_files(proc, source_dir=None, set_grp_perms=True, overwrite=True):
     @type overwrite: bool
     """
     def get_command_string(proc):
-        retval = proc.executable_name
-        if proc.input_files:
-            retval += " "
-            retval += " ".join([f.full_path() for f in proc.input_files])
-        if proc.args:
-            retval += " " + proc.args
-        return retval
+        return "{} {}".format(proc.executable_name, proc.args)
 
     def make_bsub(command, proc):
         import random
