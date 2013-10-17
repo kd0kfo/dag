@@ -84,6 +84,18 @@ def create_work(root_dag, dagpath, show_progress):
                            % root_dag.engine)
 
 
+def start_processes(root_dag, dagpath, show_progress):
+    """
+    Starts process that can start.
+
+    Calls create_work. Then saves DAG.
+    """
+    import os.path as OP
+
+    create_work(root_dag, OP.abspath(dagpath), show_progress)
+    root_dag.save()
+
+
 def clean_workunit(root_dag, proc):
     """
     Cleans up after a process. Removes temporary files.
@@ -303,8 +315,7 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False):
             root_dag.save(dagfile)
             print("updated dagfile")
     elif cmd == "start":
-        create_work(root_dag, OP.abspath(dagfile), True)
-        root_dag.save(dagfile)
+        start_processes(root_dag, OP.abspath(dagfile), True)
     elif cmd == "recreate":
         if not cmd_args:
             raise Exception("recreate requires a specific file type"
@@ -338,6 +349,8 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False):
         root_dag.save()
     elif cmd == "update":
         update_state(cmd_args, root_dag)
+        if root_dag.engine == dag.Engine.LSF:
+            start_processes(root_dag, root_dag.filename, False)
     elif cmd == "state":
         count_only = False
         if "--count" in cmd_args:
