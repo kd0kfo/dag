@@ -87,7 +87,8 @@ def stage_files(proc, source_dir=None, set_grp_perms=True, overwrite=True):
                         nproc = int(proc.nproc)
                         script_file.write('#BSUB -n {0}'.format(nproc))
                 if hasattr(proc, "host"):
-                    script_file.write("#BSUB -m {0}\n".format(proc.host))
+                    if proc.host:
+                        script_file.write("#BSUB -m {0}\n".format(proc.host))
                 script_file.write("\n%s\n" % command)
 
     cmd = get_command_string(proc)
