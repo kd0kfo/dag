@@ -165,9 +165,8 @@ def update_state(cmd_args, root_dag):
     @raise dag.DagException: If the root dag contains an invalid engine
      or if specified proces is not in the DAG.
     """
-    from dag import Engine
+    from dag import Engine, DagException
     if not cmd_args:
-        from dag import DagException
         raise DagException("Missing workunit name for update.")
 
     proc = root_dag.get_process(cmd_args[0])
