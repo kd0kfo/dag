@@ -138,7 +138,7 @@ def parse(args,kmap = {}):
 
     retval = []
 
-    strargs = " ".join(args[2:])
+    strargs = " ".join(args)
 
     have_output = ("-out" in args[2:])
     
