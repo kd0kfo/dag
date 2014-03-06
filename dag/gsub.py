@@ -133,6 +133,14 @@ def create_dag(input_filename, parsers, init_file=None,
                     tokens.remove(token)
             pname = tokens[0]
             parser_args = tokens[1:]  # used by function below
+            
+            # Is the process name set explicitly?
+            process_name = None # This is an option internal name for the process, AKA workunit_name
+            if pname[0] == '@':
+                process_name = pname[1:]
+                pname = parser_args[0]
+                parser_args = parser_args[1:]
+
             if root_dag.engine == Engine.SHELL:
                 import dag.shell
                 proc_list = dag.shell.parse_shell(pname, parser_args,
@@ -153,6 +161,17 @@ def create_dag(input_filename, parsers, init_file=None,
 
             if proc_list is None:
                 continue
+
+            # If given explicitly set workunit name
+            if process_name:
+                proc_count = 1
+                use_suffix = len(proc_list) > 1
+                for i in proc_list:
+                    if use_suffix:
+                        i.workunit_name = "%s-%d" % (process_name, proc_count)
+                    else:
+                        i.workunit_name = process_name
+                    proc_count += 1
 
             for i in proc_list:
                 root_dag.add_process(i)
