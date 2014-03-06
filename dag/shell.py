@@ -14,7 +14,6 @@ Interface module to POSIX shells. This allows processes in a DAG to interpret
 
 from dag import Process
 
-
 class ShellProcess(Process):
     def __init__(self, cmd, args):
         super(ShellProcess, self).__init__()
@@ -32,21 +31,38 @@ class ShellProcess(Process):
         import subprocess
 
         print("Starting {0}".format(self.cmd))
-        subprocess.call([self.cmd] + self.args)
+        retval = subprocess.call([self.cmd] + self.args)
         print("{0} Finished".format(self.cmd))
+        return retval
 
 
 def parse_shell(cmd, args, header_map):
     return [ShellProcess(cmd, args)]
 
 
+def runprocess(proc):
+    proc.start()
+    proc.state = States.SUCCESS
+    return procs
+
+def blah(foo):
+    print(foo)
+    return foo
+
 def create_work(root_dag, dag_path):
     from dag import States
+    from multiprocessing import Pool
 
     print("SHELL: Starting {0} processes".format(len(root_dag.processes)))
-    for proc in root_dag.processes:
-        if proc.state not in [States.CREATED, States.SUCCESS]:
-            continue
+    pool = Pool(root_dag.num_cores)
+    
+    def callback(procs):
+        for proc in procs:
+            print("CALLBACK. Finished %s" % proc.workunit_name)
 
-        proc.start()
-        proc.state = States.SUCCESS
+    torun = root_dag.get_processes_by_state((States.CREATED, States.STAGED))
+    for process in torun:
+        pool.apply_async(runprocess, (process,), callback=callback)
+
+    pool.close()
+    pool.join()

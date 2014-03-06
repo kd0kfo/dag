@@ -461,6 +461,8 @@ class DAG:
         @type state: dag.States
         @see: dag.States
         """
+        if isinstance(state, tuple) or isinstance(state, list):
+            return [proc for proc in self.processes if proc.state in state]
         return [proc for proc in self.processes if proc.state == state]
 
     def is_empty(self):

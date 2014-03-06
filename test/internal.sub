@@ -1,3 +1,6 @@
 #%python [testfile] [] print("Is a comment")
 %define test 42
 %python [] [] print("Not a comment")
+%sleep [] [] 1234
+%sleep [] [] 6000
+

@@ -129,8 +129,13 @@ def create_dag(input_filename, parsers, init_file=None,
             parser_args = tokens[1:]  # used by function below
             if root_dag.engine == Engine.SHELL:
                 import dag.shell
+                root_dag.num_cores = 2
                 proc_list = dag.shell.parse_shell(pname, parser_args,
                                                   parser_kmap)
+                num_procs = len(root_dag.processes)
+                for proc in proc_list:
+                    proc.workunit_name = "%s-%d" % (proc.cmd, num_procs)
+                    num_procs += 1
             else:
                 if not pname in parsers.keys():
                     print("No function for %s" % pname)
