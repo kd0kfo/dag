@@ -21,11 +21,11 @@ if __name__ == "__main__":
     from getopt import getopt
 
     debug = False
-    
+    num_cores = None
     dagfile = dag.DEFAULT_DAGFILE_NAME
 
     
-    (optlist,args) = getopt(argv[1:],'d:h',['dagfile=',"debug","help"])
+    (optlist,args) = getopt(argv[1:],'d:hn:',['cores=','dagfile=',"debug","help"])
 
     if not args:
         print_help()
@@ -45,7 +45,7 @@ if __name__ == "__main__":
             exit(1)
 
     try:
-        update_dag(args[0],args[1:],dagfile, debug)
+        update_dag(args[0],args[1:],dagfile, debug, num_cores)
     except Exception as e:
         import traceback
         if debug:

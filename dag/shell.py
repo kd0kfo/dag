@@ -67,7 +67,7 @@ def create_work(root_dag, dag_path):
         pool.close()
         return
 
-    print("Starting %d processes" % len(torun))
+    print("Starting %d processes using %d cores" % (len(torun), num_cores))
     # doing loop so that in the future finished processes
     # may start other processes
     import time
@@ -80,3 +80,9 @@ def create_work(root_dag, dag_path):
 
     pool.close()
     pool.join()
+
+
+def clean_workunit(root_dag, proc):
+    from os import unlink
+    for outputfile in proc.output_files:
+        outputfile.unlink()

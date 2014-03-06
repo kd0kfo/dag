@@ -55,7 +55,7 @@ def print_help(command=None):
     print("%s -- %s" % (command, command_help[command]))
 
 
-def create_work(root_dag, dagpath, show_progress):
+def create_work(root_dag, dagpath, show_progress, num_cores=None):
     """
     Takes a DAG and starts processes that are able to be started.
 
@@ -66,6 +66,8 @@ def create_work(root_dag, dagpath, show_progress):
     @param show_progress: Whether or not a progress bar is desired
      (if available).
     @type show_progress: bool
+    @param num_cores: Optional number of cores used in local multiprocessing
+    @type num_cores: int
     @raise dag.DagException: If the root dag contains an invalid engine.
     """
     from dag import Engine
@@ -84,7 +86,7 @@ def create_work(root_dag, dagpath, show_progress):
                            % root_dag.engine)
 
 
-def start_processes(root_dag, dagpath, show_progress):
+def start_processes(root_dag, dagpath, show_progress, num_cores=None):
     """
     Starts process that can start.
 
@@ -92,7 +94,7 @@ def start_processes(root_dag, dagpath, show_progress):
     """
     import os.path as OP
 
-    create_work(root_dag, OP.abspath(dagpath), show_progress)
+    create_work(root_dag, OP.abspath(dagpath), show_progress, num_cores)
     root_dag.save()
 
 
@@ -113,6 +115,9 @@ def clean_workunit(root_dag, proc):
     elif root_dag.engine == Engine.LSF:
         import dag.lsf
         dag.lsf.clean_workunit(root_dag, proc)
+    elif root_dag.engine == Engine.SHELL:
+        import dag.shell
+        dag.shell.clean_workunit(root_dag, proc)
     else:
         from dag import DagException
         raise DagException("Invalid engine id: %d"
@@ -203,7 +208,8 @@ def update_state(cmd_args, root_dag):
         raise DagException("Invalid engine id: %d" % root_dag.engine)
 
 
-def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False):
+def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
+               num_cores=None):
     """
     This is the main forking function that operates on a DAG and its workunits
 
@@ -218,6 +224,8 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False):
     @param debug: Indicate whether or not debugging information is provided,
      including stack track if an exception is raised. Default: False
     @type debug: bool
+    @param num_cores: Optional number of cores used in local multiprocessing
+    @type num_cores: int
 
     @raise Exception: if the DAG file is missing or if the command is unknown.
     """
@@ -314,7 +322,7 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False):
             root_dag.save(dagfile)
             print("updated dagfile")
     elif cmd == "start":
-        start_processes(root_dag, OP.abspath(dagfile), True)
+        start_processes(root_dag, OP.abspath(dagfile), True, num_cores)
     elif cmd == "recreate":
         if not cmd_args:
             raise Exception("recreate requires a specific file type"
@@ -333,6 +341,9 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False):
     elif cmd == "reset":
         for wuname in cmd_args:
             proc = root_dag.get_process(wuname)
+            if not proc:
+                print("No such workunit: %s" % wuname)
+                continue
             clean_workunit(root_dag, proc)
             proc.workunit_name = None
             proc.workunit_template = None
