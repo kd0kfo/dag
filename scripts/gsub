@@ -53,7 +53,7 @@ if __name__ == "__main__":
         elif opt in ['i',"init"]:
             init_filename = val
         elif opt in ['n', 'cores']:
-            num_cores = int(optarg)
+            num_cores = int(val)
         elif opt in ['s','setup_only']:
             start_jobs = False
         elif opt in ['v','version']:
