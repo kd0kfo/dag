@@ -1,3 +1,4 @@
+#%nice 10
 echo Hello World > foo.txt
 sleep 5
 cat foo.txt

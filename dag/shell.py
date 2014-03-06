@@ -22,6 +22,7 @@ class ShellProcess(Process):
         super(ShellProcess, self).__init__()
         self.cmd = cmd
         self.args = args
+        self.nice = 0
 
     def __str__(self):
         from dag import enum2string, States
@@ -32,14 +33,23 @@ class ShellProcess(Process):
 
     def start(self):
         import subprocess
+        
+        def set_niceness():
+            if self.nice:
+                from os import nice
+                print("Changing niceness by %d" % self.nice)
+                nice(self.nice)
 
         print("Starting {0}".format(self.cmd))
-        retval = subprocess.call([self.cmd] + self.args)
+        retval = subprocess.call([self.cmd] + self.args, preexec_fn=set_niceness)
         print("{0} Finished".format(self.cmd))
 
 
 def parse_shell(cmd, args, header_map):
-    return [ShellProcess(cmd, args)]
+    newproc = ShellProcess(cmd, args)
+    if "nice" in header_map:
+        newproc.nice = int(header_map["nice"])
+    return [newproc]
 
 
 def runprocess(proc):
@@ -71,6 +81,7 @@ def create_work(root_dag, dag_path):
     # doing loop so that in the future finished processes
     # may start other processes
     import time
+    from os import nice
     while torun: 
         for process in torun:
             process.state = States.RUNNING

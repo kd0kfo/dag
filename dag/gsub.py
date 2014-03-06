@@ -65,6 +65,9 @@ def preprocess_line(line, parser_kmap):
         proc.workunit_name = "internal-{0}".format(internal_counter)
         internal_counter += 1
         processes.append(proc)
+    elif line[0:5] == "%nice":
+        nice_increment = line.split()[-1]
+        parser_kmap["nice"] = int(nice_increment)
 
     return (parser_kmap, processes)
 
