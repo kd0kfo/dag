@@ -56,7 +56,6 @@ def callback(proc):
 def create_work(root_dag, dag_path):
     from multiprocessing import Pool
 
-    print("SHELL: Starting {0} processes".format(len(root_dag.processes)))
     if root_dag.num_cores:
         num_cores = root_dag.num_cores
     else:
@@ -64,8 +63,15 @@ def create_work(root_dag, dag_path):
     pool = Pool(num_cores)
 
     torun = root_dag.get_processes_by_state((States.CREATED, States.STAGED))
+    if not torun:
+        pool.close()
+        return
+
+    print("Starting %d processes" % len(torun))
+    # doing loop so that in the future finished processes
+    # may start other processes
     import time
-    while torun:
+    while torun: 
         for process in torun:
             process.state = States.RUNNING
             pool.apply_async(runprocess, (process,), callback=callback)
