@@ -12,7 +12,7 @@ Interface module to POSIX shells. This allows processes in a DAG to interpret
  and use LSF data.
 """
 
-from dag import Process
+from dag import Process, States, strstate
 
 class ShellProcess(Process):
     def __init__(self, cmd, args):
@@ -33,7 +33,6 @@ class ShellProcess(Process):
         print("Starting {0}".format(self.cmd))
         retval = subprocess.call([self.cmd] + self.args)
         print("{0} Finished".format(self.cmd))
-        return retval
 
 
 def parse_shell(cmd, args, header_map):
@@ -41,28 +40,30 @@ def parse_shell(cmd, args, header_map):
 
 
 def runprocess(proc):
+    print("RUNPROC")
     proc.start()
     proc.state = States.SUCCESS
-    return procs
+    return proc
 
-def blah(foo):
-    print(foo)
-    return foo
+
+def callback(proc):
+    print("Finished:%s State: %s" % (proc.workunit_name, strstate(proc.state)))
+ 
 
 def create_work(root_dag, dag_path):
-    from dag import States
     from multiprocessing import Pool
 
     print("SHELL: Starting {0} processes".format(len(root_dag.processes)))
     pool = Pool(root_dag.num_cores)
-    
-    def callback(procs):
-        for proc in procs:
-            print("CALLBACK. Finished %s" % proc.workunit_name)
 
     torun = root_dag.get_processes_by_state((States.CREATED, States.STAGED))
-    for process in torun:
-        pool.apply_async(runprocess, (process,), callback=callback)
+    import time
+    while torun:
+        for process in torun:
+            process.state = States.RUNNING
+            pool.apply_async(runprocess, (process,), callback=callback)
+        time.sleep(5)
+        torun = root_dag.get_processes_by_state((States.CREATED, States.STAGED))
 
     pool.close()
     pool.join()
