@@ -57,7 +57,7 @@ if __name__ == "__main__":
         elif opt in ['s','setup_only']:
             start_jobs = False
         elif opt in ['v','version']:
-            print("0.0")
+            print(dag.__version__)
             exit(0)
         else:
             from sys import stderr

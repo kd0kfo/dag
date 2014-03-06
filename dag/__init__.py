@@ -13,6 +13,8 @@ Creates and manages a Directed Acyclic Graph of embarrassingly parallel
 DEFAULT_DAGFILE_NAME = "jobs.dag"
 DEFAULT_DAG_CONFIG_FILE = ".dagrc"
 
+import pkg_resources
+__version__ = pkg_resources.require("dag")[0].version
 
 class DagException(Exception):
     """

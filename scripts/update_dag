@@ -24,7 +24,10 @@ if __name__ == "__main__":
     num_cores = None
     dagfile = dag.DEFAULT_DAGFILE_NAME
 
-    
+    if "--version" in argv or "-version" in argv:
+        print(dag.__version__)
+        exit(0)
+
     (optlist,args) = getopt(argv[1:],'d:hn:',['cores=','dagfile=',"debug","help"])
 
     if not args:
