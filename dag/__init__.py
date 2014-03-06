@@ -415,12 +415,15 @@ class DAG:
     @type filename: str
     @ivar engine: Method used to run processes.
     @type engine: dag.Engine
+    @ivar num_cores: Optional number of cores used in local multiprocessing
+    @type num_cores: int
     """
     def __init__(self, engine=Engine.BOINC):
         self.processes = []
         self.graph = Graph()
         self.filename = ""
         self.engine = engine
+        self.num_cores = None
 
     def add_process(self, proc):
         """

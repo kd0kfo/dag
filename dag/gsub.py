@@ -70,7 +70,7 @@ def preprocess_line(line, parser_kmap):
 
 
 def create_dag(input_filename, parsers, init_file=None,
-               engine=dag.Engine.SHELL):
+               engine=dag.Engine.SHELL, num_cores=None):
     """
     Takes an input file that contains a list of commands and generates a dag.
     Jobs that have all of their prerequisites met are started, unless the
@@ -84,6 +84,8 @@ def create_dag(input_filename, parsers, init_file=None,
     @param init_file: Optional file to be used for startup variables
     and routines.
     @type init_file: file
+    @param num_processors: Optional number of processors used in multiprocessing.
+    @type num_processors: int
     @return:  DAG object if successful. Otherwise, None is returned
     @rtype: dag.DAG
     """
@@ -107,6 +109,7 @@ def create_dag(input_filename, parsers, init_file=None,
 
     root_dag = DAG()
     root_dag.engine = engine
+    root_dag.num_cores = num_cores
     parser_kmap = {}  # used as the second argument of parser functions (below)
     with open(input_filename, "r") as infile:
         for line in infile:
@@ -129,7 +132,6 @@ def create_dag(input_filename, parsers, init_file=None,
             parser_args = tokens[1:]  # used by function below
             if root_dag.engine == Engine.SHELL:
                 import dag.shell
-                root_dag.num_cores = 2
                 proc_list = dag.shell.parse_shell(pname, parser_args,
                                                   parser_kmap)
                 num_procs = len(root_dag.processes)
@@ -156,7 +158,7 @@ def create_dag(input_filename, parsers, init_file=None,
 
 
 def gsub(input_filename, start_jobs=True, dagfile=dag.DEFAULT_DAGFILE_NAME,
-         init_filename=None, engine=dag.Engine.BOINC):
+         init_filename=None, engine=dag.Engine.BOINC, num_cores=None):
     """
     Reads a file containing a list of commands and parses them
     into workunits to be run on the grid. if start_jobs is true,
@@ -222,7 +224,7 @@ def gsub(input_filename, start_jobs=True, dagfile=dag.DEFAULT_DAGFILE_NAME,
         from dag.util import open_user_init
         init_file = open_user_init()
 
-    root_dag = create_dag(input_filename, parsers, init_file, engine)
+    root_dag = create_dag(input_filename, parsers, init_file, engine, num_cores)
     if root_dag is None:
         raise dag.DagException("Could not create DAG using submission "
                                "file %s" % input)

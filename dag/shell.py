@@ -14,6 +14,9 @@ Interface module to POSIX shells. This allows processes in a DAG to interpret
 
 from dag import Process, States, strstate
 
+DEFAULT_NUMBER_OF_CORES = 1
+
+
 class ShellProcess(Process):
     def __init__(self, cmd, args):
         super(ShellProcess, self).__init__()
@@ -54,7 +57,11 @@ def create_work(root_dag, dag_path):
     from multiprocessing import Pool
 
     print("SHELL: Starting {0} processes".format(len(root_dag.processes)))
-    pool = Pool(root_dag.num_cores)
+    if root_dag.num_cores:
+        num_cores = root_dag.num_cores
+    else:
+        num_cores = DEFAULT_NUMBER_OF_CORES
+    pool = Pool(num_cores)
 
     torun = root_dag.get_processes_by_state((States.CREATED, States.STAGED))
     import time

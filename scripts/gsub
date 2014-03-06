@@ -2,6 +2,7 @@
 
 def print_usage():
     from dag import DEFAULT_DAG_CONFIG_FILE, DEFAULT_DAGFILE_NAME
+    from dag.shell import DEFAULT_NUMBER_OF_CORES
 
     print("Usage: gsub [options] <filename>")
     print("Options:")
@@ -10,6 +11,8 @@ def print_usage():
     print("-e, --engine STRING\tName of job batch type. Default: BOINC")
     print("-i, --init FILE\t\tSpecify input file to be used."
           " Default: $HOME/{0}".format(DEFAULT_DAG_CONFIG_FILE))
+    print("-n, --cores INT\t\tNumber of cores/threads allowed"
+          " in local multiprocessing. (Default: %d)" % DEFAULT_NUMBER_OF_CORES)
     print("-s, --setup_only\t\tSetup the DAG, but do not stage and run jobs. Default: off")
     print("-v, --version\t\tPrint version info.")
     
@@ -23,8 +26,11 @@ if __name__ == "__main__":
     init_filename = None
     dagfilename = dag.DEFAULT_DAGFILE_NAME
     start_jobs = True
-    
-    (optlist,args) = getopt(argv[1:],'d:e:hi:sv',['dagfile=','engine=','help','init=','setup_only','version'])
+    num_cores = None
+
+    (optlist, args) = getopt(argv[1:], 'd:e:hi:n:sv',
+                            ['cores=', 'dagfile=', 'engine=', 'help',
+                             'init=', 'setup_only', 'version'])
 
     engine = Engine.BOINC
     for (opt,val) in optlist:
@@ -46,6 +52,8 @@ if __name__ == "__main__":
             exit(0)
         elif opt in ['i',"init"]:
             init_filename = val
+        elif opt in ['n', 'cores']:
+            num_cores = int(optarg)
         elif opt in ['s','setup_only']:
             start_jobs = False
         elif opt in ['v','version']:
@@ -56,10 +64,10 @@ if __name__ == "__main__":
             stderr.write("Unknown option '%s'\n" % opt)
             exit(1)
 
-
-    if len(args) == 0:
+    if not args:
         print_usage()
         exit(1)
-        
-    if gsub.gsub(args[0],start_jobs,dagfilename,init_filename,engine = engine) == None:
+
+    if gsub.gsub(args[0], start_jobs, dagfilename, init_filename,
+                 engine=engine, num_cores=num_cores) is None:
         exit(1)
