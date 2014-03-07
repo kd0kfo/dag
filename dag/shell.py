@@ -13,9 +13,7 @@ Interface module to POSIX shells. This allows processes in a DAG to interpret
 """
 
 from dag import Process, States, strstate
-
 DEFAULT_NUMBER_OF_CORES = 1
-
 
 class ShellProcess(Process):
     def __init__(self, cmd, args):
@@ -26,7 +24,11 @@ class ShellProcess(Process):
 
     def __str__(self):
         from dag import enum2string, States
-        strval = "Command: {0} {1}\n".format(self.cmd, " ".join(self.args))
+        strval = "Workunit Name: {0}\n".format(self.workunit_name)
+        strval += "Command: {0} {1}\n".format(self.cmd, " ".join(self.args))
+        if self.children:
+            strval += "Children: {0}\n".format(" ".join([child.workunit_name
+                                               for child in self.children]))
         strval += "Status: {0}".format(enum2string(States, self.state))
 
         return strval
@@ -52,43 +54,56 @@ def parse_shell(cmd, args, header_map):
     return [newproc]
 
 
-def runprocess(proc):
-    print("RUNPROC")
+def runprocess(proc, queue):
     proc.start()
     proc.state = States.SUCCESS
+    queue.put((proc.workunit_name, proc.state))
     return proc
 
 
 def callback(proc):
     print("Finished:%s State: %s" % (proc.workunit_name, strstate(proc.state)))
- 
+
 
 def create_work(root_dag, dag_path):
-    from multiprocessing import Pool
+    from multiprocessing import Manager, Pool, Queue
 
     if root_dag.num_cores:
         num_cores = root_dag.num_cores
     else:
         num_cores = DEFAULT_NUMBER_OF_CORES
     pool = Pool(num_cores)
+    manager = Manager()
+    thread_queue = manager.Queue()
 
-    torun = root_dag.get_processes_by_state((States.CREATED, States.STAGED))
+    torun = root_dag.generate_runnable_list()    
     if not torun:
         pool.close()
         return
 
-    print("Starting %d processes using %d cores" % (len(torun), num_cores))
     # doing loop so that in the future finished processes
     # may start other processes
     import time
     from os import nice
-    while torun: 
+    waiting_states = (States.CREATED, States.STAGED)
+    num_processes_left = len(root_dag.get_processes_by_state(waiting_states))
+    print("Doing work locally with %d cores" % num_cores)
+    while torun or num_processes_left:
         for process in torun:
             process.state = States.RUNNING
-            pool.apply_async(runprocess, (process,), callback=callback)
+            pool.apply_async(runprocess, (process, thread_queue,), callback=callback)
         time.sleep(5)
-        torun = root_dag.get_processes_by_state((States.CREATED, States.STAGED))
-
+        should_save_dag = not thread_queue.empty()
+        while not thread_queue.empty():
+            (procname, state) = thread_queue.get()
+            finished_process = root_dag.get_process(procname)
+            if not finished_process:
+                continue
+            finished_process.state = state
+        torun = root_dag.generate_runnable_list()
+        num_processes_left = len(root_dag.get_processes_by_state(waiting_states))
+        if should_save_dag:
+            root_dag.save()
     pool.close()
     pool.join()
 

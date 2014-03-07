@@ -18,7 +18,7 @@ import dag
 internal_counter = 0
 
 
-def preprocess_line(line, parser_kmap):
+def preprocess_line(line, parser_kmap, dependencies):
     """
     Reads a line beginning with a '%' character and follows
     the associated logic.
@@ -48,6 +48,16 @@ def preprocess_line(line, parser_kmap):
             parser_kmap[kmap_tokens[1]] = True
         else:
             parser_kmap[kmap_tokens[1]] = kmap_tokens[2:]
+    elif line[0:11] == "%dependency":
+        depend_tokens = line.split()[1:]
+        if not depend_tokens or len(depend_tokens) < 2:
+            raise dag.DagException("Dependency directive requires a parent"
+                                   " and a child process.")
+        # item 1 is the parent of item 0
+        if depend_tokens[1] in dependencies:
+            dependencies[depend_tokens[1]].append(depend_tokens[0])
+        else:
+            dependencies[depend_tokens[1]] = [depend_tokens[0]]
     elif line[0:7] == "%python":
         from dag import InternalProcess, File
         import re
@@ -69,7 +79,7 @@ def preprocess_line(line, parser_kmap):
         nice_increment = line.split()[-1]
         parser_kmap["nice"] = int(nice_increment)
 
-    return (parser_kmap, processes)
+    return (parser_kmap, processes, dependencies)
 
 
 def create_dag(input_filename, parsers, init_file=None,
@@ -114,6 +124,9 @@ def create_dag(input_filename, parsers, init_file=None,
     root_dag.engine = engine
     root_dag.num_cores = num_cores
     parser_kmap = {}  # used as the second argument of parser functions (below)
+    # dependencies dict is used to allow the user
+    # to define explicit dependencies.
+    dependencies = {}
     with open(input_filename, "r") as infile:
         for line in infile:
             line = line.strip()
@@ -122,8 +135,9 @@ def create_dag(input_filename, parsers, init_file=None,
             if line[0] == '#':  # Comment line continue
                 continue
             if line[0] == '%':  # Preprocess
-                (parser_kmap, extra_processes) = preprocess_line(line,
-                                                                 parser_kmap)
+                (parser_kmap, extra_processes,
+                 dependencies) = preprocess_line(line,
+                                                 parser_kmap, dependencies)
                 for extra_proc in extra_processes:
                     root_dag.add_process(extra_proc)
                 continue
@@ -173,8 +187,26 @@ def create_dag(input_filename, parsers, init_file=None,
                         i.workunit_name = process_name
                     proc_count += 1
 
+
             for i in proc_list:
                 root_dag.add_process(i)
+
+    # Set explicit dependencies, if any
+    for parent_name in dependencies:
+        print("Added dependency of %s" % parent_name)
+        NO_SUCH_FMT = "No such process '%s'"
+        parent_process = root_dag.get_process(parent_name)
+        if not parent_process:
+            print(NO_SUCH_FMT % parent_name)
+            continue
+        for child in dependencies[parent_name]:
+            child_proc = root_dag.get_process(child)
+            if not child_proc:
+                print(NO_SUCH_FMT % child)
+                continue
+            if child not in [proc.workunit_name for proc in parent_process.children]:
+                parent_process.children.append(child_proc)
+                print("%s depends on %s" % (child, parent_name))
 
     return root_dag
 

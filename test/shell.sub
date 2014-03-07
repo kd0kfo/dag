@@ -1,4 +1,5 @@
 #%nice 10
-echo Hello World > foo.txt
-@foo sleep 5
-cat foo.txt
+@bar echo Hello World > foo.txt
+@foo sleep 25
+cat foo2.txt
+%dependency bar foo

@@ -13,8 +13,20 @@ Creates and manages a Directed Acyclic Graph of embarrassingly parallel
 DEFAULT_DAGFILE_NAME = "jobs.dag"
 DEFAULT_DAG_CONFIG_FILE = ".dagrc"
 
-import pkg_resources
-__version__ = pkg_resources.require("dag")[0].version
+
+def get_version():
+    import pkg_resources
+    try:
+        dist = pkg_resources.get_distribution("dag")
+        if dist:
+            return dist.version
+    except pkg_resources.DistributionNotFound:
+        pass
+    return "0.0"
+
+
+__version__ = get_version()
+ 
 
 class DagException(Exception):
     """
@@ -554,7 +566,7 @@ class DAG:
 
         @return: Indication of there being missing prerequisite
             processes or files
-        @rtype: bool
+        @rtype: list
         """
 
         from os import path as OP
@@ -566,7 +578,22 @@ class DAG:
                         uncompleted_prereqs.append(parent)
             if not OP.isfile(infile.full_path()):
                 uncompleted_prereqs.append(infile)
+        for p in self.processes:
+            if p in uncompleted_prereqs:
+                continue
+            if proc in p.children and p.state != States.SUCCESS:
+                uncompleted_prereqs.append(p)
         return uncompleted_prereqs
+
+    def generate_runnable_list(self):
+        runnable = self.get_processes_by_state((States.CREATED, States.STAGED))
+        not_runnable = []
+        for process in runnable:
+            if self.incomplete_prereqs(process):
+                not_runnable.append(process)
+        for stalled in not_runnable:
+            runnable.remove(stalled)
+        return runnable
 
     def __str__(self):
         import os.path as OP
