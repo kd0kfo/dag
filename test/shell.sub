@@ -3,3 +3,4 @@
 @foo sleep 25
 cat foo2.txt
 %dependency bar foo
+trident --help

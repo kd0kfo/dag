@@ -47,11 +47,18 @@ class ShellProcess(Process):
         print("{0} Finished".format(self.cmd))
 
 
-def parse_shell(cmd, args, header_map):
-    newproc = ShellProcess(cmd, args)
+def parse_shell(cmd, args, header_map, parsers, init_code=None):
+    if not cmd in parsers:
+        proc_list = [ShellProcess(cmd, args)]
+    else:
+        if init_code:
+            exec(init_code)
+        funct = "%s(args,header_map)" % parsers[cmd]
+        proc_list = eval(funct)   # uses parser_args
     if "nice" in header_map:
-        newproc.nice = int(header_map["nice"])
-    return [newproc]
+        for newproc in proc_list:
+            newproc.nice = int(header_map["nice"])
+    return proc_list
 
 
 def runprocess(proc, queue):

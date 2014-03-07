@@ -118,7 +118,8 @@ def create_dag(input_filename, parsers, init_file=None,
             raise DagException("Could not open init file ({0}). File not found."
                                .format(init_file.name))
 
-    exec(compile(init_file.read(), init_file.name, 'exec'))
+    init_code = compile(init_file.read(), init_file.name, "exec")
+    exec(init_code)
 
     root_dag = DAG()
     root_dag.engine = engine
@@ -158,7 +159,7 @@ def create_dag(input_filename, parsers, init_file=None,
             if root_dag.engine == Engine.SHELL:
                 import dag.shell
                 proc_list = dag.shell.parse_shell(pname, parser_args,
-                                                  parser_kmap)
+                                                  parser_kmap, parsers, init_code)
                 num_procs = len(root_dag.processes)
                 for proc in proc_list:
                     proc.workunit_name = "%s-%d" % (proc.cmd, num_procs)
