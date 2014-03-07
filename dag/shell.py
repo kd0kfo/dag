@@ -108,6 +108,7 @@ def create_work(root_dag, dag_path):
         while torun or num_processes_left:
             for process in torun:
                 process.state = States.RUNNING
+                should_save_dag = True
                 pool.apply_async(runprocess, (process, thread_queue,), callback=callback)
             time.sleep(5)
             should_save_dag = not thread_queue.empty()
