@@ -43,7 +43,9 @@ class ShellProcess(Process):
                 nice(self.nice)
 
         print("Starting {0}".format(self.cmd))
-        retval = subprocess.call([self.cmd] + self.args, preexec_fn=set_niceness)
+        stdout_file = open("%s.stdout" % self.workunit_name, "w")
+        stderr_file = open("%s.stderr" % self.workunit_name, "w")
+        retval = subprocess.call([self.cmd] + self.args, preexec_fn=set_niceness, stdout=stdout_file, stderr=stderr_file)
         print("{0} Finished".format(self.cmd))
 
 
@@ -62,8 +64,15 @@ def parse_shell(cmd, args, header_map, parsers, init_code=None):
 
 
 def runprocess(proc, queue):
-    proc.start()
-    proc.state = States.SUCCESS
+    print("Starting %s" % proc.workunit_name)
+    try:
+        proc.start()
+        proc.state = States.SUCCESS
+    except Exception as e:
+        print("ERROR calling start")
+        print("TYPE: %s" % type(proc))
+        print(e)
+        proc.state = States.FAIL
     queue.put((proc.workunit_name, proc.state))
     return proc
 
@@ -95,22 +104,25 @@ def create_work(root_dag, dag_path):
     waiting_states = (States.CREATED, States.STAGED)
     num_processes_left = len(root_dag.get_processes_by_state(waiting_states))
     print("Doing work locally with %d cores" % num_cores)
-    while torun or num_processes_left:
-        for process in torun:
-            process.state = States.RUNNING
-            pool.apply_async(runprocess, (process, thread_queue,), callback=callback)
-        time.sleep(5)
-        should_save_dag = not thread_queue.empty()
-        while not thread_queue.empty():
-            (procname, state) = thread_queue.get()
-            finished_process = root_dag.get_process(procname)
-            if not finished_process:
-                continue
-            finished_process.state = state
-        torun = root_dag.generate_runnable_list()
-        num_processes_left = len(root_dag.get_processes_by_state(waiting_states))
-        if should_save_dag:
-            root_dag.save()
+    try:
+        while torun or num_processes_left:
+            for process in torun:
+                process.state = States.RUNNING
+                pool.apply_async(runprocess, (process, thread_queue,), callback=callback)
+            time.sleep(5)
+            should_save_dag = not thread_queue.empty()
+            while not thread_queue.empty():
+                (procname, state) = thread_queue.get()
+                finished_process = root_dag.get_process(procname)
+                if not finished_process:
+                    continue
+                finished_process.state = state
+            torun = root_dag.generate_runnable_list()
+            num_processes_left = len(root_dag.get_processes_by_state(waiting_states))
+            if should_save_dag:
+                root_dag.save()
+    except KeyboardInterrupt as ki:
+        pool.terminate()
     pool.close()
     pool.join()
 
