@@ -23,12 +23,13 @@ if __name__ == "__main__":
     debug = False
     num_cores = None
     dagfile = dag.DEFAULT_DAGFILE_NAME
+    init_filename = None
 
     if "--version" in argv or "-version" in argv:
         print(dag.__version__)
         exit(0)
 
-    (optlist,args) = getopt(argv[1:],'d:hn:',['cores=','dagfile=',"debug","help"])
+    (optlist,args) = getopt(argv[1:],'d:hi:n:',['init=', 'cores=','dagfile=',"debug","help"])
 
     if not args:
         print_help()
@@ -43,12 +44,28 @@ if __name__ == "__main__":
             debug = True
         elif opt in ["h","help"]:
             print_help(optarg)
+        elif opt in ['i', 'init']:
+            init_filename = optarg
         else:
             print("Unknown option: '%s'" % optlist)
             exit(1)
 
+    # Init file
+    init_file = None
+    if init_filename:
+        try:
+            init_file = open(init_filename, "r")
+        except IOError as ioe:
+            errmsg = "Could not read init file '%s'\n" % init_filename
+            if hasattr(ioe, "errno") and hasattr(ioe, "stderr"):
+                errmsg += "Reason{0}: {1}\n".format(ioe.errno, ioe.stderr)
+            raise dag.DagException(errmsg)
+    else:
+        from dag.util import open_user_init
+        init_file = open_user_init()
+
     try:
-        update_dag(args[0],args[1:],dagfile, debug, num_cores)
+        update_dag(args[0],args[1:],dagfile, debug, num_cores, init_file=init_file)
     except Exception as e:
         import traceback
         if debug:

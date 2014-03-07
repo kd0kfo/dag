@@ -209,7 +209,7 @@ def update_state(cmd_args, root_dag):
 
 
 def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
-               num_cores=None):
+               num_cores=None, init_file=None):
     """
     This is the main forking function that operates on a DAG and its workunits
 
@@ -234,6 +234,18 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
 
     def needs_dagfile(cmd):
         return cmd not in ["help"]
+
+    # If we still don't have the init file, there is a problem.
+    if not init_file:
+        if init_file is None:
+            raise dag.DagException("No init file provided.")
+        else:
+            raise dag.DagException("Could not open init file ({0}). File not found."
+                               .format(init_file.name))
+
+    parsers = {}
+    init_code = compile(init_file.read(), init_file.name, "exec")
+    exec(init_code)
 
     if debug:
         print("Running command: %s" % cmd)
