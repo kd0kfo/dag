@@ -106,12 +106,12 @@ def create_work(root_dag, dag_path):
     print("Doing work locally with %d cores" % num_cores)
     try:
         while torun or num_processes_left:
+            should_save_dag = not thread_queue.empty()
             for process in torun:
                 process.state = States.RUNNING
                 should_save_dag = True
                 pool.apply_async(runprocess, (process, thread_queue,), callback=callback)
             time.sleep(5)
-            should_save_dag = not thread_queue.empty()
             while not thread_queue.empty():
                 (procname, state) = thread_queue.get()
                 finished_process = root_dag.get_process(procname)
