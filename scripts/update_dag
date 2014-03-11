@@ -35,10 +35,12 @@ if __name__ == "__main__":
         print_help()
         exit(1)
 
-    for (opt,optarg) in optlist:
+    for (opt, optarg) in optlist:
         while opt[0] == '-':
             opt = opt[1:]
-        if opt in ["d", "dagfile"]:
+        if opt in ["n", "cores"]:
+            num_cores = int(optarg)
+        elif opt in ["d", "dagfile"]:
             dagfile = optarg
         elif opt == "debug":
             debug = True

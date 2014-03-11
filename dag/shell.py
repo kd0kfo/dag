@@ -118,6 +118,7 @@ def create_work(root_dag, dag_path):
                 if not finished_process:
                     continue
                 finished_process.state = state
+                should_save_dag = True
             torun = root_dag.generate_runnable_list()
             num_processes_left = len(root_dag.get_processes_by_state(waiting_states))
             if should_save_dag:

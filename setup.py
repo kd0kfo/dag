@@ -42,7 +42,7 @@ class Tester(Command):
 
 
 setup(name='dag',
-      version='1.6.0',
+      version='1.6.1',
       description='DAG Batch Job Creator for BOINC',
       author='David Coss, PhD',
       author_email='David.Coss@stjude.org',

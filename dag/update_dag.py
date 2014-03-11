@@ -256,6 +256,8 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
         if not OP.isfile(dagfile):
             raise Exception("Could not open '%s'" % dagfile)
         root_dag = dag.load(dagfile)
+    if num_cores:
+        root_dag.num_cores = num_cores
 
     if cmd == "print":
         if len(cmd_args) == 0:
