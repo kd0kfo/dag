@@ -66,6 +66,8 @@ def parse_shell(cmd, args, header_map, parsers, init_code=None):
 def runprocess(proc, queue):
     print("Starting %s" % proc.workunit_name)
     try:
+        proc.state = States.RUNNING
+        queue.put((proc.workunit_name, proc.state))
         proc.start()
         proc.state = States.SUCCESS
     except Exception as e:
@@ -108,7 +110,6 @@ def create_work(root_dag, dag_path):
         while torun or num_processes_left:
             should_save_dag = not thread_queue.empty()
             for process in torun:
-                process.state = States.RUNNING
                 should_save_dag = True
                 pool.apply_async(runprocess, (process, thread_queue,), callback=callback)
             time.sleep(5)
