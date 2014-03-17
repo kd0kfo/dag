@@ -54,8 +54,10 @@ class Waiter(ShellProcess):
     def __init__(self, cmd, args):
         super(Waiter, self).__init__(cmd, args)
         self.workunit_name = "waiting-%s" % args[0]
+        self.POLL_PERIOD = 60  # Seconds
 
     def start(self):
+        import time
         def check_pid(thepid):
             from os import kill
             import errno
@@ -69,7 +71,7 @@ class Waiter(ShellProcess):
         pid = int(self.args[0])
         print("Waiting on pid %d" % pid)
         while check_pid(pid):
-            continue
+            time.sleep(self.POLL_PERIOD)
         print("No longer waiting on pid %d" % pid)
 
 

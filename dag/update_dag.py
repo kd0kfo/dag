@@ -196,15 +196,18 @@ def update_state(cmd_args, root_dag):
         if len(cmd_args) < 2:
             raise DagException("For BOINC, a state name is needed"
                                " to run update")
-        new_state = cmd_args[1]
+        new_state = cmd_args[1].upper()
         proc.state = dag.intstate(new_state)
         root_dag.save()
     elif root_dag.engine == Engine.LSF:
         from lsf import get_state
         if len(cmd_args) == 2:
-            proc.state = dag.intstate(cmd_args[1])
+            proc.state = dag.intstate(cmd_args[1].upper())
         else:
             proc.state = get_state(proc)
+        root_dag.save()
+    elif root_dag.engine == Engine.SHELL:
+        proc.state = dag.intstate(cmd_args[1].upper())
         root_dag.save()
     else:
         raise DagException("Invalid engine id: %d" % root_dag.engine)
@@ -264,11 +267,12 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
     if cmd == "attach":
         from dag.shell import Waiter
         if len(cmd_args) != 2:
-            raise Exception("Attach f a workunit name"
+            raise Exception("Attach requires a workunit name"
                             " and a process id number (PID).")
-        new_process = Waiter(cmd_args[0], [cmd_args[1],])
+        new_process = Waiter(cmd_args[0], [cmd_args[1], ])
         for process in root_dag.processes:
-            if not isinstance(process, Waiter):
+            if (process.state in [dag.States.CREATED, dag.States.STAGED]
+                and not isinstance(process, Waiter)):
                 new_process.children.append(process)
         root_dag.processes.append(new_process)
         root_dag.save()
@@ -402,7 +406,7 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
                                                       dag.States.NUM_STATES)])
 
         for state_name in states_to_view.split(","):
-            state = dag.intstate(state_name)
+            state = dag.intstate(state_name.upper())
             if state is None:
                 print("%s is not a valid state." % state_name)
                 print("States are %s"
