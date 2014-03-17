@@ -13,6 +13,8 @@ Utility function for DAG files.
 import dag
 
 command_help = {
+    "attach": ("Attaches a SHELL process to a process id (PID)."
+               " Usage: attach <workunit name> <PID>"),
     "cancel": "Stops a workunit.",
     "help": "Displays help for commands. Usage: help <cmd>",
     "list": "Lists all processes.",
@@ -259,7 +261,18 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
     if num_cores:
         root_dag.num_cores = num_cores
 
-    if cmd == "print":
+    if cmd == "attach":
+        from dag.shell import Waiter
+        if len(cmd_args) != 2:
+            raise Exception("Attach f a workunit name"
+                            " and a process id number (PID).")
+        new_process = Waiter(cmd_args[0], [cmd_args[1],])
+        for process in root_dag.processes:
+            if not isinstance(process, Waiter):
+                new_process.children.append(process)
+        root_dag.processes.append(new_process)
+        root_dag.save()
+    elif cmd == "print":
         if len(cmd_args) == 0:
             print(root_dag)
         else:

@@ -15,6 +15,7 @@ Interface module to POSIX shells. This allows processes in a DAG to interpret
 from dag import Process, States, strstate
 DEFAULT_NUMBER_OF_CORES = 1
 
+
 class ShellProcess(Process):
     def __init__(self, cmd, args):
         super(ShellProcess, self).__init__()
@@ -47,6 +48,29 @@ class ShellProcess(Process):
         stderr_file = open("%s.stderr" % self.workunit_name, "w")
         retval = subprocess.call([self.cmd] + self.args, preexec_fn=set_niceness, stdout=stdout_file, stderr=stderr_file)
         print("{0} Finished".format(self.cmd))
+
+
+class Waiter(ShellProcess):
+    def __init__(self, cmd, args):
+        super(Waiter, self).__init__(cmd, args)
+        self.workunit_name = "waiting-%s" % args[0]
+
+    def start(self):
+        def check_pid(thepid):
+            from os import kill
+            import errno
+            try:
+                kill(thepid, 0)
+            except OSError as ose:
+                if errno.ESRCH == ose.errno:
+                    return False
+            return True
+
+        pid = int(self.args[0])
+        print("Waiting on pid %d" % pid)
+        while check_pid(pid):
+            continue
+        print("No longer waiting on pid %d" % pid)
 
 
 def parse_shell(cmd, args, header_map, parsers, init_code=None):
