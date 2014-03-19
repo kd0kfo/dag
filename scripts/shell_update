@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+
+import dag
+import time
+from dag.shell import QUEUE_NAME, CLI_SENDER_NAME, MASTER_SENDER_NAME
+
+def print_help(command = None):
+    import dag.update_dag as UD
+    commands = UD.command_help.keys()
+    if not command:
+        from sys import argv
+        import os.path as OP
+        print("Usage: %s <cmd> [args]" % OP.basename(argv[0]))
+        print("")
+        print("Commands are %s" % ", ".join(commands))
+        return
+
+    UD.print_help(command)
+
+if __name__ == "__main__":
+    from sys import argv
+    from getopt import getopt
+    import smq
+
+    debug = False
+    queue_filename = dag.DEFAULT_DAGFILE_NAME + ".mq"
+    
+    if "--version" in argv or "-version" in argv:
+        print(dag.__version__)
+        exit(0)
+
+    (optlist,args) = getopt(argv[1:],'q:h',["debug","help", "queue", "clear"])
+
+    should_clear_queue = False
+    for (opt, optarg) in optlist:
+        while opt[0] == '-':
+            opt = opt[1:]
+        if opt == "clear":
+            should_clear_queue = True
+        elif opt == "debug":
+            debug = True
+        elif opt in ["h","help"]:
+            print_help(optarg)
+        elif opt in ["q", "queue"]:
+            queue_filename = optarg
+        else:
+            print("Unknown option: '%s'" % optlist)
+            exit(1)
+
+    if should_clear_queue:
+        from sys import stdin
+        from os import unlink
+        print("Are you sure you want to clear the message queue?")
+        if (not stdin.readline().strip() in ["y", "Y", "yes", "Yes", "YES"]):
+            print("Canceled.")
+            exit(1)
+        unlink(queue_filename)
+        print("Cleared message queue.")
+        if not args:
+            exit(0)
+
+    if not args:
+        print_help()
+        exit(1)
+
+
+    if args[0] == "remove":
+        if len(args) > 1 and args[1] == "all":
+            print("Cannot remove all processes using shell_update. Shell processes must be stopped first.")
+            exit(1)
+
+    queue = smq.Queue(QUEUE_NAME, queue_filename)
+    queue.send(smq.Message(" ".join(args), "string", CLI_SENDER_NAME, MASTER_SENDER_NAME))
+    timeout = 7
+    while not queue.has_message(CLI_SENDER_NAME):
+        if not timeout:
+            print("Could not connect to Shell Master. Timed out.")
+            exit(1)
+        time.sleep(1)
+        timeout -= 1
+    response = queue.next(CLI_SENDER_NAME)
+    print(response.content)
