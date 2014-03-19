@@ -41,6 +41,9 @@ class Tester(Command):
         print("Did you see a progress bar?")
 
 
+thescripts = ["scripts/gsub", "scripts/update_dag",
+              "scripts/shell_update"]
+
 setup(name='dag',
       version='1.6.3',
       description='DAG Batch Job Creator for BOINC',
@@ -48,6 +51,6 @@ setup(name='dag',
       author_email='David.Coss@stjude.org',
       license='GPL v3',
       packages=['dag'],
-      scripts=["scripts/gsub", "scripts/update_dag"],
+      scripts=thescripts,
       cmdclass={'test': Tester}
       )
