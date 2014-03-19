@@ -213,56 +213,21 @@ def update_state(cmd_args, root_dag):
         raise DagException("Invalid engine id: %d" % root_dag.engine)
 
 
-def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
-               num_cores=None, init_file=None):
+def modify_dag(root_dag, cmd, cmd_args, debug=False):
     """
-    This is the main forking function that operates on a DAG and its workunits
-
-    Arguments:
-    @param cmd: Command to run on DAG
+    This is the main operating function. This takes a command and performs
+    an action on the dag
+    
+    @param root_dag: DAG to be modified
+    @type root_dag: dag.DAG
+    @param cmd: Command to execute
     @type cmd: str
-    @param cmd_args: List of string arguments for the specified command
+    @param cmd_args: Optional arguments for commands.
     @type cmd_args: list
-    @param dagfile: Optional filename for the DAG to be updated.
-     Default: jobs.dag
-    @type dagfile: str
-    @param debug: Indicate whether or not debugging information is provided,
-     including stack track if an exception is raised. Default: False
+    @param debug: Optional debug flag
     @type debug: bool
-    @param num_cores: Optional number of cores used in local multiprocessing
-    @type num_cores: int
-
-    @raise Exception: if the DAG file is missing or if the command is unknown.
     """
-    from os import path as OP
-    import dag
-
-    def needs_dagfile(cmd):
-        return cmd not in ["help"]
-
-    # If we still don't have the init file, there is a problem.
-    if not init_file:
-        if init_file is None:
-            raise dag.DagException("No init file provided.")
-        else:
-            raise dag.DagException("Could not open init file ({0}). File not found."
-                               .format(init_file.name))
-
-    parsers = {}
-    init_code = compile(init_file.read(), init_file.name, "exec")
-    exec(init_code)
-
-    if debug:
-        print("Running command: %s" % cmd)
-
-    # If the dag is needed (probably), load it.
-    root_dag = None
-    if needs_dagfile(cmd):
-        if not OP.isfile(dagfile):
-            raise Exception("Could not open '%s'" % dagfile)
-        root_dag = dag.load(dagfile)
-    if num_cores:
-        root_dag.num_cores = num_cores
+    import os.path as OP
 
     if cmd == "attach":
         from dag.shell import Waiter
@@ -316,7 +281,7 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
                         from progressbar import ProgressBar, Percentage, Bar
                         num_processes = len(root_dag.processes)
                         if num_processes:
-                            progress_bar = ProgressBar(widgets = [Percentage(), Bar()], maxval=num_processes).start()
+                            progress_bar = ProgressBar(widgets = [Percentage(), Bar()], maxval = num_processes).start()
                     for proc in root_dag.processes:
                         if debug:
                             print("Removing %s" % proc.workunit_name)
@@ -343,17 +308,18 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
                     if root_dag.incomplete_prereqs(proc):
                         raise Exception("Cannot start %s."
                                         " Missing dependencies.")
-                    schedule_work(root_dag, proc, dagfile)
+                    schedule_work(root_dag, proc, root_dag.filename)
                     if isinstance(proc, dag.InternalProcess):
                         proc.state = dag.States.SUCCESS
                     else:
                         proc.state = dag.States.RUNNING
 
             #save dag
-            root_dag.save(dagfile)
+            root_dag.save()
             print("updated dagfile")
     elif cmd == "start":
-        start_processes(root_dag, OP.abspath(dagfile), True, num_cores)
+        start_processes(root_dag, OP.abspath(root_dag.filename),
+                        True, root_dag.num_cores)
     elif cmd == "recreate":
         if not cmd_args:
             raise Exception("recreate requires a specific file type"
@@ -426,3 +392,58 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
         if not debug:
             print("Unknown command: %s" % cmd)
         raise Exception("Unknown command: %s" % cmd)
+
+
+def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
+               num_cores=None, init_file=None):
+    """
+    This is the main forking function that operates on a DAG and its workunits
+
+    Arguments:
+    @param cmd: Command to run on DAG
+    @type cmd: str
+    @param cmd_args: List of string arguments for the specified command
+    @type cmd_args: list
+    @param dagfile: Optional filename for the DAG to be updated.
+     Default: jobs.dag
+    @type dagfile: str
+    @param debug: Indicate whether or not debugging information is provided,
+     including stack track if an exception is raised. Default: False
+    @type debug: bool
+    @param num_cores: Optional number of cores used in local multiprocessing
+    @type num_cores: int
+
+    @raise Exception: if the DAG file is missing or if the command is unknown.
+    """
+    from os import path as OP
+    import dag
+
+    def needs_dagfile(cmd):
+        return cmd not in ["help"]
+
+    # If we still don't have the init file, there is a problem.
+    if not init_file:
+        if init_file is None:
+            raise dag.DagException("No init file provided.")
+        else:
+            raise dag.DagException("Could not open init file ({0}). File not found."
+                               .format(init_file.name))
+
+    parsers = {}
+    init_code = compile(init_file.read(), init_file.name, "exec")
+    exec(init_code)
+
+    if debug:
+        print("Running command: %s" % cmd)
+
+    # If the dag is needed (probably), load it.
+    root_dag = None
+    if needs_dagfile(cmd):
+        if not OP.isfile(dagfile):
+            raise Exception("Could not open '%s'" % dagfile)
+        root_dag = dag.load(dagfile)
+        root_dag.filename = dagfile
+    if num_cores:
+        root_dag.num_cores = num_cores
+
+    modify_dag(root_dag, cmd, cmd_args, debug)
