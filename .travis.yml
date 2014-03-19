@@ -1,5 +1,11 @@
 language: python
 python:
     - "2.7"
-install: "pip install -r requirements.txt"
+install: 
+    - pip install -r requirements.txt
+    - cd depends
+    - git clone https://github.com/kd0kfo/smq.git
+    - cd smq
+    - pip install $PWD
+    - cd ../..
 script: python setup.py test
