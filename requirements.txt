@@ -1,2 +1,3 @@
 lockfile
 progressbar
+-e git://github.com/kd0kfo/smq.git#egg=smq

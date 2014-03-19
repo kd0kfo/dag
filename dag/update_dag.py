@@ -41,7 +41,7 @@ command_help = {
     }
 
 
-def print_help(command=None):
+def get_help_string(command=None):
     """
     Prints help for a command using the command_help dict. Help is printed
      to standard output.
@@ -51,10 +51,9 @@ def print_help(command=None):
     """
     if not command in command_help:
         if command:
-            print("Unknown command: %s" % command)
-        print("Commands are %s" % ", ".join(command_help))
-        return
-    print("%s -- %s" % (command, command_help[command]))
+            return "Unknown command: %s" % command
+        return "Commands are %s" % ", ".join(command_help)
+    return "%s -- %s" % (command, command_help[command])
 
 
 def create_work(root_dag, dagpath, show_progress, num_cores=None):
@@ -228,7 +227,9 @@ def modify_dag(root_dag, cmd, cmd_args, debug=False):
     @type debug: bool
     """
     import os.path as OP
+    import dag
 
+    return_message = ""
     if cmd == "attach":
         from dag.shell import Waiter
         if len(cmd_args) != 2:
@@ -241,25 +242,27 @@ def modify_dag(root_dag, cmd, cmd_args, debug=False):
                 new_process.children.append(process)
         root_dag.processes.append(new_process)
         root_dag.save()
+        return "Attached %s" % cmd_args[0]
     elif cmd == "print":
         if len(cmd_args) == 0:
-            print(root_dag)
+            return_message += "%s\n" % root_dag
         else:
             proc = root_dag.get_process(cmd_args[0])
             if proc:
-                print(proc)
+                return_message += proc
+                return_message += "\n"
             else:
-                print("No such process found: {0}".format(cmd_args[0]))
-            return
+                return_message += "No such process found: {0}\n".format(cmd_args[0])
+            return return_message
     elif cmd == "help":
         if not cmd_args:
-            print_help(None)
+            return get_help_string(None)
         else:
-            print_help(cmd_args[0])
+            return get_help_string(cmd_args[0])
     elif cmd == "list":
         for proc in root_dag.processes:
-            print("%s: %s " % (proc.workunit_name, proc.cmd))
-        exit(0)
+            return_message += "%s: %s\n" % (proc.workunit_name, proc.cmd)
+        return return_message
     elif cmd in ["remove", "run", "stage"]:
         if len(cmd_args) == 0:
             raise Exception("%s requires at least one workunit name" % cmd)
@@ -297,29 +300,30 @@ def modify_dag(root_dag, cmd, cmd_args, debug=False):
                         print("Removing %s" % wuname)
                     clean_workunit(root_dag, proc)
                     root_dag.processes.remove(proc)  # remove process
-
+                    return_message += "Removed %s\n" % wuname
             if cmd in ["run", "stage"]:
                 print("Staging %s" % wuname)
                 stage_files(root_dag, proc)
                 if proc.state == dag.States.CREATED:
                     proc.state = dag.States.STAGED
                 if cmd == "run":
-                    print("Starting %s" % wuname)
+                    return_message += "Starting %s\n" % wuname
                     if root_dag.incomplete_prereqs(proc):
                         raise Exception("Cannot start %s."
                                         " Missing dependencies.")
                     schedule_work(root_dag, proc, root_dag.filename)
                     if isinstance(proc, dag.InternalProcess):
                         proc.state = dag.States.SUCCESS
+                        return_message += "Finished %s" % wuname
                     else:
                         proc.state = dag.States.RUNNING
-
             #save dag
             root_dag.save()
             print("updated dagfile")
     elif cmd == "start":
         start_processes(root_dag, OP.abspath(root_dag.filename),
                         True, root_dag.num_cores)
+        return_message += "Started processes"
     elif cmd == "recreate":
         if not cmd_args:
             raise Exception("recreate requires a specific file type"
@@ -335,11 +339,12 @@ def modify_dag(root_dag, cmd, cmd_args, debug=False):
             print("Created result template")
         else:
             print("Do not know how to recreate: '%s'" % cmd_args[0])
+        return_message += "Recreated %s\n" % cmd_args[0]
     elif cmd == "reset":
         for wuname in cmd_args:
             proc = root_dag.get_process(wuname)
             if not proc:
-                print("No such workunit: %s" % wuname)
+                return_message += "No such workunit: %s\n" % wuname
                 continue
             clean_workunit(root_dag, proc)
             proc.workunit_name = None
@@ -347,6 +352,7 @@ def modify_dag(root_dag, cmd, cmd_args, debug=False):
             proc.result_template = None
             proc.state = dag.States.CREATED
             root_dag.save()
+            return_message += "Reset %s" % wuname
     elif cmd == "cancel":
         if root_dag.engine != dag.Engine.BOINC:
             raise dag.DagException("Can only cancel BOINC jobs.")
@@ -354,10 +360,12 @@ def modify_dag(root_dag, cmd, cmd_args, debug=False):
         proc_list = [root_dag.get_process(wuname) for wuname in cmd_args]
         dag.boinc.cancel_workunits(proc_list)
         root_dag.save()
+        return_message += "Cancelled %s" % ", ".join(cmd_args)
     elif cmd == "update":
         update_state(cmd_args, root_dag)
         if root_dag.engine == dag.Engine.LSF:
             start_processes(root_dag, root_dag.filename, False)
+        return_message += "Updated process"
     elif cmd == "state":
         count_only = False
         if "--count" in cmd_args:
@@ -381,18 +389,18 @@ def modify_dag(root_dag, cmd, cmd_args, debug=False):
                 raise dag.DagException("Invalid State")
             proc_list = root_dag.get_processes_by_state(state)
             if count_only:
-                print("%s: %d" % (dag.strstate(state), len(proc_list)))
+                return_message += "%s: %d\n" % (dag.strstate(state), len(proc_list))
             else:
                 for i in proc_list:
-                    print(i)
+                    return_message += "%s" % i
     elif cmd == "uuid":
         proc = root_dag.get_process(cmd_args[0])
-        print(proc.uuid)
+        return_message += proc.uuid
     else:
         if not debug:
-            print("Unknown command: %s" % cmd)
+            return_message += "Unknown command: %s" % cmd
         raise Exception("Unknown command: %s" % cmd)
-
+    return return_message
 
 def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
                num_cores=None, init_file=None):
@@ -446,4 +454,4 @@ def update_dag(cmd, cmd_args, dagfile=dag.DEFAULT_DAGFILE_NAME, debug=False,
     if num_cores:
         root_dag.num_cores = num_cores
 
-    modify_dag(root_dag, cmd, cmd_args, debug)
+    print(modify_dag(root_dag, cmd, cmd_args, debug))

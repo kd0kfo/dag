@@ -15,6 +15,11 @@ Interface module to POSIX shells. This allows processes in a DAG to interpret
 from dag import Process, States, strstate
 DEFAULT_NUMBER_OF_CORES = 1
 
+# Messages Queue Fields
+QUEUE_NAME = "dag"
+CLI_SENDER_NAME = "cli"
+MASTER_SENDER_NAME = "master"
+
 
 class ShellProcess(Process):
     def __init__(self, cmd, args):
@@ -109,8 +114,33 @@ def callback(proc):
     print("Finished:%s State: %s" % (proc.workunit_name, strstate(proc.state)))
 
 
+def perform_operation(root_dag, message):
+    from dag.update_dag import modify_dag
+    if not message:
+        return
+    tokens = message.content.split(" ")
+    cmd = tokens[0]
+    cmd_args = tokens[1:]
+    print("Shell Monitor is running %s" % cmd)
+    try:
+        retval = modify_dag(root_dag, cmd, cmd_args, True)
+        root_dag.save()
+        return retval
+    except Exception as e:
+        import traceback
+        return "Error running %s: %s\n%s" % (cmd, e, traceback.format_exc())
+
+
+def process_messages(root_dag, message_queue):
+    from smq import Message
+    print("Processing Message Queue. %d Messages." % message_queue.count_messages(MASTER_SENDER_NAME))
+    while message_queue.has_message(MASTER_SENDER_NAME):
+        retval = perform_operation(root_dag, message_queue.next(MASTER_SENDER_NAME))
+        message_queue.send(Message(retval, "str", MASTER_SENDER_NAME, CLI_SENDER_NAME))
+
 def create_work(root_dag, dag_path):
-    from multiprocessing import Manager, Pool, Queue
+    from multiprocessing import Manager, Pool
+    import smq
 
     if root_dag.num_cores:
         num_cores = root_dag.num_cores
@@ -118,7 +148,19 @@ def create_work(root_dag, dag_path):
         num_cores = DEFAULT_NUMBER_OF_CORES
     pool = Pool(num_cores)
     manager = Manager()
+    # this queue is used by this python process and the worker threads
     thread_queue = manager.Queue()
+
+    # Setup Message queue used for update_dag to communicate with this
+    # python thread, rather than directly modify root_dag
+    message_queue_filename = root_dag.filename
+    if not message_queue_filename:
+        from dag import DEFAULT_DAGFILE_NAME
+        message_queue_filename = "%s.mq" % DEFAULT_DAGFILE_NAME
+    else:
+        message_queue_filename += ".mq"
+    message_queue = smq.Queue(QUEUE_NAME, message_queue_filename)
+    process_messages(root_dag, message_queue)
 
     torun = root_dag.generate_runnable_list()    
     if not torun:
@@ -150,6 +192,7 @@ def create_work(root_dag, dag_path):
             num_processes_left = len(root_dag.get_processes_by_state(waiting_states))
             if should_save_dag:
                 root_dag.save()
+            process_messages(root_dag, message_queue)
     except KeyboardInterrupt as ki:
         pool.terminate()
     pool.close()
