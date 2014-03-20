@@ -309,7 +309,7 @@ def gsub(input_filename, start_jobs=True, dagfile=dag.DEFAULT_DAGFILE_NAME,
     except Exception as e:
         import traceback
         print("Exception thrown creating work")
-        print("Message: %s" % e.message)
+        print("Message: %s" % e)
         traceback.print_exc()
         raise e
 
