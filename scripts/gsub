@@ -13,7 +13,8 @@ def print_usage():
           " Default: $HOME/{0}".format(DEFAULT_DAG_CONFIG_FILE))
     print("-n, --cores INT\t\tNumber of cores/threads allowed"
           " in local multiprocessing. (Default: %d)" % DEFAULT_NUMBER_OF_CORES)
-    print("-s, --setup_only\t\tSetup the DAG, but do not stage and run jobs. Default: off")
+    print("-q, --queue STRING\tPath to Message Queue File. (Default: <dag file>.db)")
+    print("-s, --setup_only\tSetup the DAG, but do not stage and run jobs. Default: off")
     print("-v, --version\t\tPrint version info.")
     
 if __name__ == "__main__":
@@ -28,11 +29,12 @@ if __name__ == "__main__":
     start_jobs = True
     num_cores = None
 
-    (optlist, args) = getopt(argv[1:], 'd:e:hi:n:sv',
+    (optlist, args) = getopt(argv[1:], 'd:e:hi:n:q:sv',
                             ['cores=', 'dagfile=', 'engine=', 'help',
-                             'init=', 'setup_only', 'version'])
+                             'init=', 'queue=', 'setup_only', 'version'])
 
     engine = Engine.BOINC
+    queue_filename = None
     for (opt,val) in optlist:
         while opt[0] == '-':
             opt = opt[1:]
@@ -54,6 +56,8 @@ if __name__ == "__main__":
             init_filename = val
         elif opt in ['n', 'cores']:
             num_cores = int(val)
+        elif opt in ['q', 'queue']:
+            queue_filename = val
         elif opt in ['s','setup_only']:
             start_jobs = False
         elif opt in ['v','version']:
@@ -69,5 +73,6 @@ if __name__ == "__main__":
         exit(1)
 
     if gsub.gsub(args[0], start_jobs, dagfilename, init_filename,
-                 engine=engine, num_cores=num_cores) is None:
+                 engine=engine, num_cores=num_cores,
+                 queue_filename=queue_filename) is None:
         exit(1)

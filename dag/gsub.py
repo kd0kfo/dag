@@ -213,7 +213,8 @@ def create_dag(input_filename, parsers, init_file=None,
 
 
 def gsub(input_filename, start_jobs=True, dagfile=dag.DEFAULT_DAGFILE_NAME,
-         init_filename=None, engine=dag.Engine.BOINC, num_cores=None):
+         init_filename=None, engine=dag.Engine.BOINC, num_cores=None,
+         queue_filename=None):
     """
     Reads a file containing a list of commands and parses them
     into workunits to be run on the grid. if start_jobs is true,
@@ -243,6 +244,8 @@ def gsub(input_filename, start_jobs=True, dagfile=dag.DEFAULT_DAGFILE_NAME,
     @type init_filename: str
     @param engine: System used to run processes.
     @type engine: dag.States
+    @param queue_filename: Path to Message Queue File
+    @type queue_filename: str 
     @return: DAG contain processes created by the job submission script.
     @rtype: dag.DAG
     @raise dag.DagException: If DAG file already exists or cannot be created or
@@ -283,6 +286,10 @@ def gsub(input_filename, start_jobs=True, dagfile=dag.DEFAULT_DAGFILE_NAME,
     if root_dag is None:
         raise dag.DagException("Could not create DAG using submission "
                                "file %s" % input)
+    if not queue_filename:
+        root_dag.queue_filename = "%s.mq" % dagfile
+    else:
+        root_dag.queue_filename = queue_filename
     save_dag(root_dag, dagfile)
 
     # Check to see if the directory is writable. If not, issue warning.

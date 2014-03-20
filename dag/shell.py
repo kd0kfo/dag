@@ -153,13 +153,8 @@ def create_work(root_dag, dag_path):
 
     # Setup Message queue used for update_dag to communicate with this
     # python thread, rather than directly modify root_dag
-    message_queue_filename = root_dag.filename
-    if not message_queue_filename:
-        from dag import DEFAULT_DAGFILE_NAME
-        message_queue_filename = "%s.mq" % DEFAULT_DAGFILE_NAME
-    else:
-        message_queue_filename += ".mq"
-    message_queue = smq.Queue(QUEUE_NAME, message_queue_filename, timeout=7)
+    
+    message_queue = smq.Queue(QUEUE_NAME, root_dag.queue_filename, timeout=7)
     process_messages(root_dag, message_queue)
 
     torun = root_dag.generate_runnable_list()    
