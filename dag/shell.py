@@ -159,7 +159,7 @@ def create_work(root_dag, dag_path):
         message_queue_filename = "%s.mq" % DEFAULT_DAGFILE_NAME
     else:
         message_queue_filename += ".mq"
-    message_queue = smq.Queue(QUEUE_NAME, message_queue_filename)
+    message_queue = smq.Queue(QUEUE_NAME, message_queue_filename, timeout=7)
     process_messages(root_dag, message_queue)
 
     torun = root_dag.generate_runnable_list()    
