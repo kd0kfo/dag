@@ -249,8 +249,7 @@ def modify_dag(root_dag, cmd, cmd_args, debug=False):
         else:
             proc = root_dag.get_process(cmd_args[0])
             if proc:
-                return_message += proc
-                return_message += "\n"
+                return_message += "%s\n" % proc
             else:
                 return_message += "No such process found: {0}\n".format(cmd_args[0])
             return return_message
