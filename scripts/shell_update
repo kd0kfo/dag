@@ -2,7 +2,7 @@
 
 import dag
 import time
-from dag.shell import QUEUE_NAME, CLI_SENDER_NAME, MASTER_SENDER_NAME
+from dag.shell import QUEUE_NAME, CLI_SENDER_PREFIX, MASTER_SENDER_NAME
 
 def print_help(command = None):
     import dag.update_dag as UD
@@ -21,6 +21,7 @@ if __name__ == "__main__":
     from sys import argv
     from getopt import getopt
     import smq
+    from os import getpid
 
     debug = False
     queue_filename = dag.DEFAULT_DAGFILE_NAME + ".mq"
@@ -70,13 +71,14 @@ if __name__ == "__main__":
             exit(1)
 
     queue = smq.Queue(QUEUE_NAME, queue_filename)
-    queue.send(smq.Message(" ".join(args), "string", CLI_SENDER_NAME, MASTER_SENDER_NAME))
+    myname = "%s_%d" % (CLI_SENDER_PREFIX, getpid())
+    queue.send(smq.Message(" ".join(args), "string", myname, MASTER_SENDER_NAME))
     timeout = 7
-    while not queue.has_message(CLI_SENDER_NAME):
+    while not queue.has_message(myname):
         if not timeout:
             print("Could not connect to Shell Master. Timed out.")
             exit(1)
         time.sleep(1)
         timeout -= 1
-    response = queue.next(CLI_SENDER_NAME)
+    response = queue.next(myname)
     print(response.content)

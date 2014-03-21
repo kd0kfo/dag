@@ -17,7 +17,7 @@ DEFAULT_NUMBER_OF_CORES = 1
 
 # Messages Queue Fields
 QUEUE_NAME = "dag"
-CLI_SENDER_NAME = "cli"
+CLI_SENDER_PREFIX = "cli"
 MASTER_SENDER_NAME = "master"
 
 
@@ -133,10 +133,11 @@ def perform_operation(root_dag, message):
 
 def process_messages(root_dag, message_queue):
     from smq import Message
-    print("Processing Message Queue. %d Messages." % message_queue.count_messages(MASTER_SENDER_NAME))
     while message_queue.has_message(MASTER_SENDER_NAME):
-        retval = perform_operation(root_dag, message_queue.next(MASTER_SENDER_NAME))
-        message_queue.send(Message(retval, "str", MASTER_SENDER_NAME, CLI_SENDER_NAME))
+        message = message_queue.next(MASTER_SENDER_NAME)
+        print("Processing Message from %s" % message.sender)
+        retval = perform_operation(root_dag, message)
+        message_queue.send(Message(retval, "str", MASTER_SENDER_NAME, message.sender))
 
 def create_work(root_dag, dag_path):
     from multiprocessing import Manager, Pool
