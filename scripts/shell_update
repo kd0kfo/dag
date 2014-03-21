@@ -65,6 +65,11 @@ if __name__ == "__main__":
         exit(1)
 
 
+    # Forbidden processes
+    if args[0] in ["start"]:
+        print("Shell updater cannot run %s" % args[0])
+        exit(1)
+
     if args[0] == "remove":
         if len(args) > 1 and args[1] == "all":
             print("Cannot remove all processes using shell_update. Shell processes must be stopped first.")
