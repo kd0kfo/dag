@@ -395,7 +395,7 @@ def modify_dag(root_dag, cmd, cmd_args, debug=False):
                     return_message += "%s" % i
     elif cmd == "uuid":
         proc = root_dag.get_process(cmd_args[0])
-        return_message += proc.uuid
+        return_message += str(proc.uuid)
     else:
         if not debug:
             return_message += "Unknown command: %s" % cmd
