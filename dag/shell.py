@@ -121,6 +121,11 @@ def perform_operation(root_dag, message):
     tokens = message.content.split(" ")
     cmd = tokens[0]
     cmd_args = tokens[1:]
+
+    # Forbidden processes
+    if cmd in ["start"]:
+        return "Shell command line client cannot run %s" % cmd
+
     print("Shell Monitor is running %s" % cmd)
     try:
         retval = modify_dag(root_dag, cmd, cmd_args, True)
