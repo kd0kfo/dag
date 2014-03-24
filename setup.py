@@ -8,7 +8,13 @@ class Tester(Command):
 
     def initialize_options(self):
         import os
+        import logging
         self._dir = os.getcwd()
+        logger = logging.getLogger('dag')
+        logger.setLevel(logging.DEBUG)
+        fh = logging.FileHandler('test/debug.log')
+        fh.setLevel(logging.DEBUG)
+        logger.addHandler(fh)
 
     def finalize_options(self):
         pass

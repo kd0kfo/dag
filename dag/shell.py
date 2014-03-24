@@ -50,7 +50,6 @@ class ShellProcess(Process):
     def start(self):
         import subprocess
         import time
-        import smq
 
         message_queue = self.message_queue
 
@@ -65,8 +64,6 @@ class ShellProcess(Process):
         stderr_file = open("%s.stderr" % self.workunit_name, "w")
         # retval = subprocess.call([self.cmd] + self.args, preexec_fn=set_niceness, stdout=stdout_file, stderr=stderr_file)
         shell_process = subprocess.Popen([self.cmd] + self.args, preexec_fn=set_niceness, stdout=stdout_file, stderr=stderr_file)
-        message_queue.send(smq.Message("state:%d" % States.RUNNING, "str",
-                                       self.workunit_name, MASTER_SENDER_NAME))
         while shell_process.poll() is None:
             if message_queue.has_message(self.workunit_name):
                 message = message_queue.next(self.workunit_name)
@@ -84,8 +81,6 @@ class ShellProcess(Process):
             self.state = States.FAIL
         else:
             self.state = States.SUCCESS
-        message_queue.send(smq.Message("state:%d" % self.state, "str",
-                               self.workunit_name, MASTER_SENDER_NAME))
 
 
 class Waiter(ShellProcess):
@@ -147,15 +142,25 @@ def runprocess(proc, message_queue):
     return proc
     """
     import os
+    import smq
     pid = os.fork()
     if pid:  # Master
         return pid
 
     # Child
     L.debug("Forked %s as %d" % (proc.workunit_name, os.getpid()))
+    # Updating master
+    proc.state = States.RUNNING
     proc.message_queue = message_queue
+    message_queue.send(smq.Message("state:%d" % proc.state, "str",
+                               proc.workunit_name, MASTER_SENDER_NAME))
     proc.start()
-    L.debug("%d finished start()" % os.getpid())
+    # If proc.start does not update its state, assume SUCCESS
+    if proc.state == States.RUNNING:
+        proc.state = States.SUCCESS
+    message_queue.send(smq.Message("state:%d" % proc.state, "str",
+                               proc.workunit_name, MASTER_SENDER_NAME))
+    L.debug("%d finished start() with status %s" % (os.getpid(), strstate(proc.state)))
     exit(0)
 
 
@@ -180,6 +185,13 @@ def perform_operation(root_dag, message):
         import traceback
         return "Error running %s: %s\n%s" % (cmd, e, traceback.format_exc())
 
+
+def dump_state(root_dag, message_queue):
+    from dag.update_dag import modify_dag
+    retval = "Currently running %d processes\n" % len(running_children)
+    retval += "Jobs by state:\n%s\n" % modify_dag(root_dag, "state",
+                                                  ["all", "--count"], False)
+    return retval
 
 def process_messages(root_dag, message_queue):
     global kill_switch
@@ -211,6 +223,8 @@ def process_messages(root_dag, message_queue):
                 for ended in [i for i in running_children
                               if i[0] == proc.workunit_name]:
                     running_children.remove(ended)
+        elif message.content == "dump":
+            retval = dump_state(root_dag, message_queue)
         else:
             retval = perform_operation(root_dag, message)
         send(retval, message.sender)
