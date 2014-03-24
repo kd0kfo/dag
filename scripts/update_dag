@@ -43,6 +43,12 @@ if __name__ == "__main__":
         elif opt in ["d", "dagfile"]:
             dagfile = optarg
         elif opt == "debug":
+            import logging
+            logger = logging.getLogger('dag')
+            logger.setLevel(logging.DEBUG)
+            fh = logging.FileHandler(optarg)
+            fh.setLevel(logging.DEBUG)
+            logger.addHandler(fh)
             debug = True
         elif opt in ["h","help"]:
             print_help(optarg)

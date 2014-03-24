@@ -30,7 +30,7 @@ if __name__ == "__main__":
     num_cores = None
 
     (optlist, args) = getopt(argv[1:], 'd:e:hi:n:q:sv',
-                            ['cores=', 'dagfile=', 'engine=', 'help',
+                            ['cores=', 'dagfile=', 'debug=', 'engine=', 'help',
                              'init=', 'queue=', 'setup_only', 'version'])
 
     engine = Engine.BOINC
@@ -40,6 +40,13 @@ if __name__ == "__main__":
             opt = opt[1:]
         if opt in ['d','dagfile']:
             dagfilename = val
+        elif opt == "debug":
+            import logging
+            logger = logging.getLogger('dag')
+            logger.setLevel(logging.DEBUG)
+            fh = logging.FileHandler(val)
+            fh.setLevel(logging.DEBUG)
+            logger.addHandler(fh)
         elif opt in ["e","engine"]:
             if not val in Engine.__dict__:
                 print("Unknown Engine")
