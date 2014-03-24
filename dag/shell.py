@@ -247,11 +247,14 @@ def create_work(root_dag, dag_path):
     finally:
         mypid = getpid()
         if mypid == master_pid and running_children:
-            from os import kill, getpid
-            L.debug("%d is killing threads %d threads " % (getpid(), len(running_children)))
+            from os import kill
+            L.debug("%d is killing threads %d threads " % (mypid, len(running_children)))
             for running_child in running_children:
                 L.debug("Sending kill signal to %s" % running_child[1])
-                kill(running_child[1], 15)
+                message_queue.send(smq.Message(KILL_SIGNAL, "str",
+                                               MASTER_SENDER_NAME,
+                                               running_child[0]))
+
 
 
 def clean_workunit(root_dag, proc):
