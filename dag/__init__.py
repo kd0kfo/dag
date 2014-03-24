@@ -50,7 +50,9 @@ def enum(*sequential, **vals):
 
 Engine = enum('BOINC', 'LSF', 'SHELL', 'NUM_ENGINES')
 States = enum('CREATED', 'STAGED', 'RUNNING', 'SUCCESS', 'FAIL', 'NUM_STATES')
-
+WAITING_STATES = (States.CREATED, States.STAGED)
+RUNNING_STATES = (States.RUNNING)
+FINISHED_STATES = (States.SUCCESS, States.FAIL) 
 
 def enum2string(enum, val):
     """

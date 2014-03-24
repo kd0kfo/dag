@@ -65,6 +65,8 @@ class ShellProcess(Process):
         stderr_file = open("%s.stderr" % self.workunit_name, "w")
         # retval = subprocess.call([self.cmd] + self.args, preexec_fn=set_niceness, stdout=stdout_file, stderr=stderr_file)
         shell_process = subprocess.Popen([self.cmd] + self.args, preexec_fn=set_niceness, stdout=stdout_file, stderr=stderr_file)
+        message_queue.send(smq.Message("state:%d" % States.RUNNING, "str",
+                                       self.workunit_name, MASTER_SENDER_NAME))
         while shell_process.poll() is None:
             if message_queue.has_message(self.workunit_name):
                 message = message_queue.next(self.workunit_name)
@@ -76,7 +78,12 @@ class ShellProcess(Process):
                         F.close()
                     break
             time.sleep(5)
-        L.info("{0} Finished".format(self.cmd))
+        exit_status = shell_process.poll()
+        L.info("{0} Finished with exit code {1}".format(self.cmd, exit_status))
+        if exit_status:
+            self.state = States.FAIL
+        else:
+            self.state = States.SUCCESS
         message_queue.send(smq.Message("state:%d" % self.state, "str",
                                self.workunit_name, MASTER_SENDER_NAME))
 
@@ -177,13 +184,15 @@ def perform_operation(root_dag, message):
 def process_messages(root_dag, message_queue):
     global kill_switch
     from smq import Message
+    from dag import FINISHED_STATES
 
     def send(text, recipient):
         message_queue.send(Message(text, "str", MASTER_SENDER_NAME, recipient))
 
     while message_queue.has_message(MASTER_SENDER_NAME):
         message = message_queue.next(MASTER_SENDER_NAME)
-        L.debug("Processing Message from %s" % message.sender)
+        L.debug("Processing Message from %s: %s..." %
+                (message.sender, message.content[0:15]))
         if message.content == "shutdown":
             kill_switch = True
             retval = "Shutting down shell processes"
@@ -198,6 +207,10 @@ def process_messages(root_dag, message_queue):
             retval = ("Changed state of %s to %s"
                       % (proc.workunit_name, strstate(proc.state)))
             root_dag.save()
+            if proc.state in FINISHED_STATES:
+                for ended in [i for i in running_children
+                              if i[0] == proc.workunit_name]:
+                    running_children.remove(ended)
         else:
             retval = perform_operation(root_dag, message)
         send(retval, message.sender)
@@ -206,6 +219,7 @@ def process_messages(root_dag, message_queue):
 def create_work(root_dag, dag_path):
     import smq
     from os import getpid
+    from dag import WAITING_STATES
 
     global kill_switch
     global running_children
@@ -228,8 +242,7 @@ def create_work(root_dag, dag_path):
     # doing loop so that in the future finished processes
     # may start other processes
     import time
-    waiting_states = (States.CREATED, States.STAGED)
-    num_processes_left = len(root_dag.get_processes_by_state(waiting_states))
+    num_processes_left = len(root_dag.get_processes_by_state(WAITING_STATES))
     L.info("Doing work locally with %d cores. Master PID %d" % (num_cores, getpid()))
     try:
         while torun or num_processes_left:
@@ -238,7 +251,7 @@ def create_work(root_dag, dag_path):
                     break
                 pid = runprocess(process, message_queue)
                 running_children.append((process.workunit_name, pid))
-            num_processes_left = len(root_dag.get_processes_by_state(waiting_states))
+            num_processes_left = len(root_dag.get_processes_by_state(WAITING_STATES))
             process_messages(root_dag, message_queue)
             if kill_switch:
                 break
