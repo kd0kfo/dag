@@ -230,6 +230,14 @@ def process_messages(root_dag, message_queue):
         send(retval, message.sender)
 
 
+def send_kill_signal(process_name, pid, message_queue):
+    import smq
+    L.debug("Sending kill signal to %s" % pid)
+    message_queue.send(smq.Message(KILL_SIGNAL, "str",
+                                   MASTER_SENDER_NAME,
+                                   process_name))
+
+
 def create_work(root_dag, dag_path):
     import smq
     from os import getpid
@@ -247,6 +255,7 @@ def create_work(root_dag, dag_path):
     # Setup Message queue used for update_dag to communicate with this
     # python thread, rather than directly modify root_dag
     message_queue = smq.Queue(QUEUE_NAME, root_dag.queue_filename, timeout=7)
+    root_dag.message_queue = message_queue
     process_messages(root_dag, message_queue)
 
     torun = root_dag.generate_runnable_list()
@@ -277,12 +286,19 @@ def create_work(root_dag, dag_path):
             from os import kill, waitpid
             L.debug("%d is killing threads %d threads " % (mypid, len(running_children)))
             for running_child in running_children:
-                L.debug("Sending kill signal to %s" % running_child[1])
-                message_queue.send(smq.Message(KILL_SIGNAL, "str",
-                                               MASTER_SENDER_NAME,
-                                               running_child[0]))
+                send_kill_signal(running_child[0], running_child[1], message_queue)
                 waitpid(running_child[1], 0)
 
+
+def cancel_workunits(root_dag, processes):
+    L.debug("Canceling work units %s" % [p.workunit_name for p in processes])
+    for proc in processes:
+        childlist = [P for P in running_children if proc.workunit_name == P[0]]
+        if childlist:
+            pid = childlist[0][1]
+            send_kill_signal(proc.workunit_name,
+                             pid,
+                             root_dag.message_queue)
 
 
 def clean_workunit(root_dag, proc):

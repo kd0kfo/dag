@@ -353,11 +353,18 @@ def modify_dag(root_dag, cmd, cmd_args, debug=False):
             root_dag.save()
             return_message += "Reset %s" % wuname
     elif cmd == "cancel":
-        if root_dag.engine != dag.Engine.BOINC:
-            raise dag.DagException("Can only cancel BOINC jobs.")
-        import dag.boinc
+        if root_dag.engine == dag.Engine.LSF:
+            raise dag.DagException("Cannot yet cancel LSF jobs.")
+        elif root_dag.engine == dag.Engine.SHELL:
+            if not hasattr(root_dag, "message_queue"):
+                raise dag.DagException("Cannot stop shell process "
+                                       "without message queue")
+        
         proc_list = [root_dag.get_process(wuname) for wuname in cmd_args]
-        dag.boinc.cancel_workunits(proc_list)
+        if root_dag.engine == dag.Engine.BOINC:
+            dag.boinc.cancel_workunits(proc_list)
+        elif root_dag.engine == dag.Engine.SHELL:
+            dag.shell.cancel_workunits(root_dag, proc_list)
         root_dag.save()
         return_message += "Cancelled %s" % ", ".join(cmd_args)
     elif cmd == "update":
