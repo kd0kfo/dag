@@ -22,6 +22,7 @@ if __name__ == "__main__":
     from getopt import getopt
     import smq
     from os import getpid
+    from os.path import isfile
 
     debug = False
     queue_filename = dag.DEFAULT_DAGFILE_NAME + ".mq"
@@ -70,6 +71,9 @@ if __name__ == "__main__":
             print("Cannot remove all processes using shell_update. Shell processes must be stopped first.")
             exit(1)
 
+    if not isfile(queue_filename):
+        print("Could not open queue file: %s" % queue_filename)
+        exit(1)
     queue = smq.Queue(QUEUE_NAME, queue_filename)
     myname = "%s_%d" % (CLI_SENDER_PREFIX, getpid())
     queue.send(smq.Message(" ".join(args), "string", myname, MASTER_SENDER_NAME))
