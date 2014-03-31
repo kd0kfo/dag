@@ -29,7 +29,7 @@ if __name__ == "__main__":
         print(dag.__version__)
         exit(0)
 
-    (optlist,args) = getopt(argv[1:],'d:hi:n:',['init=', 'cores=','dagfile=',"debug","help"])
+    (optlist,args) = getopt(argv[1:],'d:hi:n:',['init=', 'cores=','dagfile=',"debug=","help"])
 
     if not args:
         print_help()
