@@ -62,8 +62,12 @@ class ShellProcess(Process):
         L.info("Starting {0}".format(self.cmd))
         stdout_file = open("%s.stdout" % self.workunit_name, "w")
         stderr_file = open("%s.stderr" % self.workunit_name, "w")
+
         # retval = subprocess.call([self.cmd] + self.args, preexec_fn=set_niceness, stdout=stdout_file, stderr=stderr_file)
-        shell_process = subprocess.Popen([self.cmd] + self.args, preexec_fn=set_niceness, stdout=stdout_file, stderr=stderr_file)
+        shell_process = subprocess.Popen([self.cmd] + self.args,
+                                         preexec_fn=set_niceness,
+                                         stdout=stdout_file,
+                                         stderr=stderr_file)
         while shell_process.poll() is None:
             if message_queue.has_message(self.workunit_name):
                 message = message_queue.next(self.workunit_name)
@@ -201,6 +205,7 @@ def process_messages(root_dag, message_queue):
     def send(text, recipient):
         message_queue.send(Message(text, "str", MASTER_SENDER_NAME, recipient))
 
+    retval = None
     while message_queue.has_message(MASTER_SENDER_NAME):
         message = message_queue.next(MASTER_SENDER_NAME)
         L.debug("Processing Message from %s: %s..." %
@@ -216,7 +221,7 @@ def process_messages(root_dag, message_queue):
                 break
             newstate = message.content.replace("state:", "")
             proc.state = int(newstate)
-            retval = ("Changed state of %s to %s"
+            L.debug("Changed state of %s to %s"
                       % (proc.workunit_name, strstate(proc.state)))
             root_dag.save()
             if proc.state in FINISHED_STATES:
@@ -227,7 +232,8 @@ def process_messages(root_dag, message_queue):
             retval = dump_state(root_dag, message_queue)
         else:
             retval = perform_operation(root_dag, message)
-        send(retval, message.sender)
+        if retval is not None:
+            send(retval, message.sender)
 
 
 def send_kill_signal(process_name, pid, message_queue):
@@ -268,7 +274,7 @@ def create_work(root_dag, dag_path):
     num_processes_left = len(root_dag.get_processes_by_state(WAITING_STATES))
     L.info("Doing work locally with %d cores. Master PID %d" % (num_cores, getpid()))
     try:
-        while torun or num_processes_left:
+        while torun or num_processes_left or running_children:
             for process in torun:
                 if len(running_children) >= num_cores:
                     break
@@ -283,6 +289,14 @@ def create_work(root_dag, dag_path):
     finally:
         mypid = getpid()
         if mypid == master_pid and running_children:
+            if not torun:
+                L.debug("Finished loop because there are no runnable processes left.")
+            if not num_processes_left:
+                L.debug("Finished loop because there are no processes left in the waiting state.")
+            if not running_children:
+                L.debug("Finished loop because there are no running processes at the moment.")
+            if kill_switch:
+                L.debug("Finished loop because kill switch was thrown.")
             from os import kill, waitpid
             L.debug("%d is killing threads %d threads " % (mypid, len(running_children)))
             for running_child in running_children:
