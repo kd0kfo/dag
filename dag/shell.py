@@ -1,15 +1,17 @@
 """
 dag.shell
-=======
+=========
 
 
 @author: David Coss, PhD
-@date: May 9, 2013
+@date: April 21, 2014
 @license: GPL version 3 (see COPYING or
  http://www.gnu.org/licenses/gpl.html for details)
 
-Interface module to POSIX shells. This allows processes in a DAG to interpret
- and use LSF data.
+Process intercommunication requires smq,
+which may be found at https://github.com/kd0kfo/smq
+
+Interface module to POSIX shells.
 """
 
 from dag import Process, States, strstate
@@ -17,6 +19,7 @@ import logging
 
 L = logging.getLogger("dag.shell")
 
+# Default number of cores to use when running multiple shell processes.
 DEFAULT_NUMBER_OF_CORES = 1
 
 # Messages Queue Fields
@@ -25,19 +28,39 @@ CLI_SENDER_PREFIX = "cli"
 MASTER_SENDER_NAME = "master"
 KILL_SIGNAL = "kill"
 
+# Module variables
 kill_switch = False
 running_children = []
 
 
 class ShellProcess(Process):
+    """
+    Abstraction of POSIX Shell Process.
+
+    Contains fields of dag.Process plus "nice" which corresponds to the
+    "niceness" of the processes. The value of nice is added to the niceness
+    of the process when it starts.
+    """
     def __init__(self, cmd, args):
+        """
+        @param cmd: Command to be executed
+        @type cmd: str
+        @param args: List of arguments to be provided to the command (cmd)
+        @type args: list
+        """
         super(ShellProcess, self).__init__()
         self.cmd = cmd
         self.args = args
         self.nice = 0
 
     def __str__(self):
-        from dag import enum2string, States
+        """
+        Returns a string summary of the process.
+
+        @return: Summary of process
+        @rtype: str
+        """
+        from dag import enum2string
         strval = "Workunit Name: {0}\n".format(self.workunit_name)
         strval += "Command: {0} {1}\n".format(self.cmd, " ".join(self.args))
         if self.children:
@@ -48,6 +71,18 @@ class ShellProcess(Process):
         return strval
 
     def start(self):
+        """
+        Starts the shell processes.
+
+        The nice value of this object is added to the nice value
+        of the forked process.
+
+        Standard output and error are piped to files
+        named <workunit name>.stdout and <workunit name>.stderr, respectively.
+
+        The process runs until it exists or receives KILL_SIGNAL
+        from the master process.
+        """
         import subprocess
         import time
 
@@ -63,7 +98,6 @@ class ShellProcess(Process):
         stdout_file = open("%s.stdout" % self.workunit_name, "w")
         stderr_file = open("%s.stderr" % self.workunit_name, "w")
 
-        # retval = subprocess.call([self.cmd] + self.args, preexec_fn=set_niceness, stdout=stdout_file, stderr=stderr_file)
         shell_process = subprocess.Popen([self.cmd] + self.args,
                                          preexec_fn=set_niceness,
                                          stdout=stdout_file,
@@ -88,6 +122,12 @@ class ShellProcess(Process):
 
 
 class Waiter(ShellProcess):
+    """
+    Subclass of shell process that can be used to monitor a process
+    that is not tracked in the DAG object. This object will be added
+    to the DAG. It will run until the process it is monitoring has
+    ended. Default polling period when monitoring is 60 seconds.
+    """
     def __init__(self, cmd, args):
         super(Waiter, self).__init__(cmd, args)
         self.workunit_name = "waiting-%s" % args[0]
@@ -95,6 +135,7 @@ class Waiter(ShellProcess):
 
     def start(self):
         import time
+
         def check_pid(thepid):
             from os import kill
             import errno
@@ -128,22 +169,10 @@ def parse_shell(cmd, args, header_map, parsers, init_code=None):
 
 def runprocess(proc, message_queue):
     """
-    from os import getpid
-    pid = getpid()
-    print("Starting %s with pid %d" % (proc.workunit_name, pid))
-    try:
-        proc.state = States.RUNNING
-        proc.queue_filename = message_queue
-        queue.put((proc.workunit_name, proc.state, pid))
-        proc.start()
-        proc.state = States.SUCCESS
-    except Exception as e:
-        print("ERROR calling start")
-        print("TYPE: %s" % type(proc))
-        print(e)
-        proc.state = States.FAIL
-    queue.put((proc.workunit_name, proc.state, pid))
-    return proc
+    Called by the master shell program, this function forks a shell process.
+    The master process returns the PID of the child. The child process runs
+    the shell process and then sends a message back to the master process
+    indicating its status.
     """
     import os
     import smq
@@ -164,11 +193,24 @@ def runprocess(proc, message_queue):
         proc.state = States.SUCCESS
     message_queue.send(smq.Message("state:%d" % proc.state, "str",
                                proc.workunit_name, MASTER_SENDER_NAME))
-    L.debug("%d finished start() with status %s" % (os.getpid(), strstate(proc.state)))
+    L.debug("%d finished start() with status %s" % (os.getpid(),
+                                                    strstate(proc.state)))
     exit(0)
 
 
 def perform_operation(root_dag, message):
+    """
+    Parses a messages from a child process and acts on the request,
+    generally calling update.modify_dag. Returns a string reply to
+    that may be sent to the client.
+
+    @param root_dag: Main DAG object
+    @type root_dag: dag.DAG
+    @param message: Message sent from client to master
+    @type message: str
+    @return: Message to be sent to the client
+    @rtype: str
+    """
     from dag.update_dag import modify_dag
     if not message:
         return
@@ -191,13 +233,29 @@ def perform_operation(root_dag, message):
 
 
 def dump_state(root_dag, message_queue):
+    """
+    Returns information on the state of the running processes.
+
+    @return: State information for the shell processes
+    @rtype: str
+    """
     from dag.update_dag import modify_dag
     retval = "Currently running %d processes\n" % len(running_children)
     retval += "Jobs by state:\n%s\n" % modify_dag(root_dag, "state",
                                                   ["all", "--count"], False)
     return retval
 
+
 def process_messages(root_dag, message_queue):
+    """
+    Reads through messages in the queue for the master and acts on them.
+
+    @see: perform_operation
+    @param root_dag: Main DAG object
+    @type root_dag: dag.DAG
+    @param message_queue: Message queue being read
+    @type message_queue: smq.Queue
+    """
     global kill_switch
     from smq import Message
     from dag import FINISHED_STATES
@@ -237,6 +295,16 @@ def process_messages(root_dag, message_queue):
 
 
 def send_kill_signal(process_name, pid, message_queue):
+    """
+    Sends a kill signal to child processes.
+
+    @param process_name: Name of process to be killed.
+    @type process_name: str
+    @param pid: PID to be killed
+    @type: int
+    @param message_queue: Queue to be used to send signal
+    @type message_queue: smq.Queue
+    """
     import smq
     L.debug("Sending kill signal to %s" % pid)
     message_queue.send(smq.Message(KILL_SIGNAL, "str",
@@ -245,18 +313,29 @@ def send_kill_signal(process_name, pid, message_queue):
 
 
 def create_work(root_dag, dag_path):
+    """
+    Starts and monitors shell processes. This is the
+    main process loop function.
+
+    @param root_dag: Main DAG object
+    @type root_dag: dag.DAG
+    @param dag_path: Path to DAG file
+    @type dag_path: str
+    """
     import smq
     from os import getpid
     from dag import WAITING_STATES
 
     global kill_switch
     global running_children
-    
+
     if root_dag.num_cores:
         num_cores = root_dag.num_cores
     else:
         num_cores = DEFAULT_NUMBER_OF_CORES
-    master_pid = getpid()  # called before fork. All are therefore aware who master is.
+
+    # called before fork. All are therefore aware who master is.
+    master_pid = getpid()
 
     # Setup Message queue used for update_dag to communicate with this
     # python thread, rather than directly modify root_dag
@@ -272,7 +351,8 @@ def create_work(root_dag, dag_path):
     # may start other processes
     import time
     num_processes_left = len(root_dag.get_processes_by_state(WAITING_STATES))
-    L.info("Doing work locally with %d cores. Master PID %d" % (num_cores, getpid()))
+    L.info("Doing work locally with %d cores. Master PID %d" % (num_cores,
+                                                                getpid()))
     try:
         while torun or num_processes_left or running_children:
             for process in torun:
@@ -280,7 +360,8 @@ def create_work(root_dag, dag_path):
                     break
                 pid = runprocess(process, message_queue)
                 running_children.append((process.workunit_name, pid))
-            num_processes_left = len(root_dag.get_processes_by_state(WAITING_STATES))
+            num_processes_left = len(root_dag
+                                     .get_processes_by_state(WAITING_STATES))
             process_messages(root_dag, message_queue)
             if kill_switch:
                 break
@@ -290,21 +371,35 @@ def create_work(root_dag, dag_path):
         mypid = getpid()
         if mypid == master_pid and running_children:
             if not torun:
-                L.debug("Finished loop because there are no runnable processes left.")
+                L.debug("Finished loop because there are "
+                        "no runnable processes left.")
             if not num_processes_left:
-                L.debug("Finished loop because there are no processes left in the waiting state.")
+                L.debug("Finished loop because there are "
+                        "no processes left in the waiting state.")
             if not running_children:
-                L.debug("Finished loop because there are no running processes at the moment.")
+                L.debug("Finished loop because there are "
+                        "no running processes at the moment.")
             if kill_switch:
                 L.debug("Finished loop because kill switch was thrown.")
-            from os import kill, waitpid
-            L.debug("%d is killing threads %d threads " % (mypid, len(running_children)))
+            from os import waitpid
+            L.debug("%d is killing threads %d threads " %
+                    (mypid, len(running_children)))
             for running_child in running_children:
-                send_kill_signal(running_child[0], running_child[1], message_queue)
+                send_kill_signal(running_child[0],
+                                 running_child[1],
+                                 message_queue)
                 waitpid(running_child[1], 0)
 
 
 def cancel_workunits(root_dag, processes):
+    """
+    Takes a list of processes and sends a kill signal.
+
+    @param root_dag: Main DAG object
+    @type root_dag: dag.DAG
+    @param processes: List of processes to be cancelled
+    @type processes: list of dag.Process
+    """
     L.debug("Canceling work units %s" % [p.workunit_name for p in processes])
     for proc in processes:
         childlist = [P for P in running_children if proc.workunit_name == P[0]]
@@ -316,6 +411,13 @@ def cancel_workunits(root_dag, processes):
 
 
 def clean_workunit(root_dag, proc):
-    from os import unlink
+    """
+    Removes output files for process
+
+    @param root_dag: Main DAG object
+    @type root_dag: dag.DAG
+    @param proc: Process to be cleaned
+    @type proc: dag.Proc
+    """
     for outputfile in proc.output_files:
         outputfile.unlink()
