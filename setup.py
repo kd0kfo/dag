@@ -51,7 +51,7 @@ thescripts = ["scripts/gsub", "scripts/update_dag",
               "scripts/shell_update"]
 
 setup(name='dag',
-      version='1.6.4',
+      version='1.7.0',
       description='DAG Batch Job Creator for BOINC',
       author='David Coss, PhD',
       author_email='David.Coss@stjude.org',
